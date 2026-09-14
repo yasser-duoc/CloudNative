@@ -33,8 +33,8 @@ public class CatalogController {
 
     @PostMapping("/services")
     @ResponseStatus(HttpStatus.CREATED)
-    public ServiceItem createService(@Valid @RequestBody ServiceItem service) {
-        return service.createService(service);
+    public ServiceItem createService(@Valid @RequestBody ServiceItem serviceItem) {
+        return service.createService(serviceItem);
     }
 
     @GetMapping("/spareparts")

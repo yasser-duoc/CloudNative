@@ -10,7 +10,7 @@ dist-out/
 target/
 *.class
 *.jar
-!.mvn/wrapper/maven-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.jar
 .mvn/timing.properties
 
 # ---------- IDE ----------

@@ -20,7 +20,7 @@ public class DigitalFixJwtAuthenticationConverter implements Converter<Jwt, Abst
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
         authorities.addAll(extractRoleAuthorities(jwt));
-        authorities.addAll(scopesConverter.convert(jwt).getAuthorities());
+        authorities.addAll(scopesConverter.convert(jwt));
 
         String principalName = jwt.getClaimAsString("preferred_username");
         if (principalName == null) {
