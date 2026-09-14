@@ -191,6 +191,7 @@ Configurados en `ms-digitalfix-workorders/src/main/java/com/digitalfix/workorder
 
 - Docker + Docker Compose v2
 - `AZURE_TENANT_ID` y `AZURE_API_CLIENT_ID` (App Registration de Azure AD)
+- Configuración completa de Azure AD (app registrations, scope y roles): ver [`AZURE_SETUP.md`](./AZURE_SETUP.md)
 
 ### 7.2 Variables de entorno
 
