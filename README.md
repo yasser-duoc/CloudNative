@@ -12,7 +12,7 @@ mensajería asíncrona con **RabbitMQ** y streaming/analítica con **Kafka**, to
 ```mermaid
 flowchart LR
     subgraph Client["Cliente (Browser)"]
-        FE["Angular SPA<br/>(MSAL v3 + MsalInterceptor + Guards)"]
+        FE["React SPA<br/>(MSAL React + axios interceptor + ProtectedRoute)"]
     end
 
     subgraph Azure["Azure AD (IDaaS)"]
@@ -70,7 +70,7 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Repositorio GitHub | Ruta en este repo | Contenido |
 |---|---|---|
-| `digitalfix-frontend` | `frontend/digitalfix-web/` | Angular 17 + MSAL (config, interceptor, guards, servicios) |
+| `digitalfix-frontend` | `frontend/digitalfix-react/` | React.js 18 + MSAL (config, ProtectedRoute, interceptor axios) |
 | `ms-digitalfix-bff` | `backend/ms-digitalfix-bff/` | API Gateway interno / BFF + Spring Security |
 | `ms-digitalfix-workorders` | `backend/ms-digitalfix-workorders/` | Dominio órdenes (CRUD) + **productor** RabbitMQ/Kafka |
 | `ms-digitalfix-catalog` | `backend/ms-digitalfix-catalog/` | Catálogo de servicios y repuestos (Oracle) |
@@ -90,7 +90,7 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | Angular 17 (standalone) · `@azure/msal-angular` v3 · `@azure/msal-browser` v3 |
+| Frontend | React.js 18 · `@azure/msal-react` v2 · `@azure/msal-browser` v3 · axios |
 | Backend | Java 21 · Spring Boot 3.3 · Spring Security · Spring Data JPA |
 | Seguridad | OAuth 2.0 / OpenID Connect — Azure AD v2.0 · JWT (issuer, audience, firma, vigencia) |
 | API Gateway | AWS API Gateway (JWT authorizer) |
@@ -105,7 +105,7 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Servicio | Puerto | BD | Responsabilidad |
 |---|---|---|---|
-| `digitalfix-web` | 4200 | — | SPA Angular (servida por nginx) |
+| `digitalfix-react` | 3000 | — | SPA React (servida por nginx) |
 | `ms-digitalfix-bff` | 8080 | — | Backend For Frontend + seguridad |
 | `ms-digitalfix-workorders` | 8081 | Oracle | CRUD órdenes + productor de eventos |
 | `ms-digitalfix-catalog` | 8082 | Oracle | CRUD servicios y repuestos |
@@ -154,13 +154,13 @@ Configurados en `ms-digitalfix-workorders/src/main/java/com/digitalfix/workorder
 
 ## 6. Flujo de seguridad JWT (para la presentación)
 
-1. **Login (interactivo)**: el usuario entra al SPA Angular. `MsalGuard` detecta que no hay
+1. **Login (interactivo)**: el usuario entra al SPA React. `ProtectedRoute` (MSAL React) detecta que no hay
    sesión y redirige a Azure AD (`authority = https://login.microsoftonline.com/<TENANT_ID>`).
 2. **Consent**: Azure AD autentica al usuario y emite un `access_token` (JWT) para el
    `clientId` de la SPA y con el scope `api://<API_CLIENT_ID>/access_as_user`.
-3. **Peticiones protegidas**: el `MsalInterceptor` (registrado como `HTTP_INTERCEPTORS`) adjunta
-   `Authorization: Bearer <access_token>` a toda URL mapeada en `protectedResourceMap`.
-   Los roles (`roles`) y scopes (`scp`) se leen de los claims y son usados por `RoleGuard`.
+3. **Peticiones protegidas**: el interceptor de axios (`httpClient`) adjunta
+   `Authorization: Bearer <access_token>` a cada llamada. Los roles (`roles`) y scopes (`scp`)
+   se leen de los claims del JWT y los valida `ProtectedRoute`.
 4. **API Gateway (AWS)**: valida la firma/issuer del JWT y reenvía la petición al BFF.
 5. **BFF (`ms-digitalfix-bff`)**: con `NimbusJwtDecoder` valida:
    - **Issuer**: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`.
@@ -225,7 +225,7 @@ Verificación:
 docker compose -f infrastructure/compose.apps.yml ps
 docker ps
 # RabbitMQ management: http://localhost:15672
-# Frontend:           http://localhost:4200
+# Frontend:           http://localhost:3000
 # BFF health:         http://localhost:8080/actuator/health
 ```
 
@@ -241,9 +241,9 @@ docker ps
 cd backend/ms-digitalfix-bff && ./mvnw spring-boot:run
 cd backend/ms-digitalfix-workorders && ./mvnw spring-boot:run
 
-# Frontend (scaffold previo con Angular CLI)
-cd frontend/digitalfix-web && npm install && npm start
+# Frontend (React)
+cd frontend/digitalfix-react && npm install && npm start
 ```
 
-Para el frontend: genera el scaffold con `ng new digitalfix-web`, sobreescribe `src/` con los
-archivos provistos y rellena `src/environments/environment.ts` con `TENANT_ID` y `API_CLIENT_ID`.
+Para el frontend: copia `.env.example` a `.env` y rellena `REACT_APP_AZURE_CLIENT_ID`,
+`REACT_APP_AZURE_TENANT_ID` y `REACT_APP_API_SCOPE` con los valores reales de Azure AD.
