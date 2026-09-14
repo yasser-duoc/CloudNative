@@ -1,0 +1,108 @@
+services:
+  digitalfix-web:
+    build:
+      context: ../frontend/digitalfix-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - ms-digitalfix-bff
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-bff:
+    build:
+      context: ../backend/ms-digitalfix-bff
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      WORKORDERS_SERVICE_URL: http://ms-digitalfix-workorders:8081
+      CATALOG_SERVICE_URL: http://ms-digitalfix-catalog:8082
+      NOTIFY_SERVICE_URL: http://ms-digitalfix-notify:8083
+      AUDIT_SERVICE_URL: http://ms-digitalfix-audit:8084
+      REPORT_SERVICE_URL: http://ms-digitalfix-report:8085
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-workorders:
+    build:
+      context: ../backend/ms-digitalfix-workorders
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-catalog:
+    build:
+      context: ../backend/ms-digitalfix-catalog
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-notify:
+    build:
+      context: ../backend/ms-digitalfix-notify
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq-1
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-audit:
+    build:
+      context: ../backend/ms-digitalfix-audit
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+  ms-digitalfix-report:
+    build:
+      context: ../backend/ms-digitalfix-report
+    environment:
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+networks:
+  digitalfix-net:
+    external: true

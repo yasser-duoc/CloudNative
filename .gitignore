@@ -1,0 +1,49 @@
+# ---------- Node / Angular ----------
+node_modules/
+dist/
+dist-out/
+.angular/
+.cache/
+*.tsbuildinfo
+
+# ---------- Java / Maven ----------
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ---------- IDE ----------
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+.springBeans
+.metadata/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---------- Env / Secrets ----------
+.env
+.env.*
+!.env.example
+*.local
+application-local.yml
+application-local.properties
+*.pem
+*.p12
+*.jks
+*.keystore
+
+# ---------- Logs ----------
+*.log
+logs/
+*.pid
