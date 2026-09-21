@@ -248,3 +248,27 @@ cd frontend/pedidos360-react && npm install && npm start
 
 Para el frontend: copia `.env.example` a `.env` y rellena `REACT_APP_AZURE_CLIENT_ID`,
 `REACT_APP_AZURE_TENANT_ID` y `REACT_APP_API_SCOPE` con los valores reales de Azure AD.
+
+---
+
+## 9. Tests y CI
+
+Pruebas unitarias del backend (JUnit 5 + Mockito, sin infraestructura externa). Se ejecutan
+con el wrapper Maven de cada módulo:
+
+```bash
+cd backend/ms-pedidos360-bff         && ./mvnw test
+cd backend/ms-pedidos360-workorders  && ./mvnw test
+cd backend/ms-pedidos360-catalog     && ./mvnw test
+cd backend/ms-pedidos360-audit       && ./mvnw test
+cd backend/ms-pedidos360-report      && ./mvnw test
+```
+
+Compilación completa + tests (incluye validación del empaquetado):
+
+```bash
+./mvnw -q -B verify
+```
+
+[GitHub Actions](.github/workflows/ci.yml) valida en cada push/PR a `main`:
+compila y ejecuta los tests de los 6 microservicios (Java 21) y compila el frontend React.
