@@ -3,9 +3,9 @@ services:
     image: rabbitmq:3.13-management
     hostname: rabbitmq-1
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-digitalfix}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-digitalfix}
-      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-digitalfix-cookie}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-pedidos360-cookie}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -13,15 +13,15 @@ services:
       - rabbitmq1-data:/var/lib/rabbitmq
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
   rabbitmq-2:
     image: rabbitmq:3.13-management
     hostname: rabbitmq-2
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-digitalfix}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-digitalfix}
-      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-digitalfix-cookie}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pedidos360}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pedidos360}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-pedidos360-cookie}
     ports:
       - "5673:5672"
       - "15673:15672"
@@ -37,12 +37,12 @@ services:
              rabbitmqctl start_app"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
 volumes:
   rabbitmq1-data:
   rabbitmq2-data:
 
 networks:
-  digitalfix-net:
+  pedidos360-net:
     external: true

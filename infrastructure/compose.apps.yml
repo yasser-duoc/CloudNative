@@ -1,108 +1,108 @@
 services:
-  digitalfix-react:
+  pedidos360-react:
     build:
-      context: ../frontend/digitalfix-react
+      context: ../frontend/pedidos360-react
     ports:
       - "3000:80"
     depends_on:
-      - ms-digitalfix-bff
+      - ms-pedidos360-bff
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-bff:
+  ms-pedidos360-bff:
     build:
-      context: ../backend/ms-digitalfix-bff
+      context: ../backend/ms-pedidos360-bff
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
-      WORKORDERS_SERVICE_URL: http://ms-digitalfix-workorders:8081
-      CATALOG_SERVICE_URL: http://ms-digitalfix-catalog:8082
-      NOTIFY_SERVICE_URL: http://ms-digitalfix-notify:8083
-      AUDIT_SERVICE_URL: http://ms-digitalfix-audit:8084
-      REPORT_SERVICE_URL: http://ms-digitalfix-report:8085
+      WORKORDERS_SERVICE_URL: http://ms-pedidos360-workorders:8081
+      CATALOG_SERVICE_URL: http://ms-pedidos360-catalog:8082
+      NOTIFY_SERVICE_URL: http://ms-pedidos360-notify:8083
+      AUDIT_SERVICE_URL: http://ms-pedidos360-audit:8084
+      REPORT_SERVICE_URL: http://ms-pedidos360-report:8085
     ports:
       - "8080:8080"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-workorders:
+  ms-pedidos360-workorders:
     build:
-      context: ../backend/ms-digitalfix-workorders
+      context: ../backend/ms-pedidos360-workorders
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
-      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-pedidos360}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-pedidos360}
     ports:
       - "8081:8081"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-catalog:
+  ms-pedidos360-catalog:
     build:
-      context: ../backend/ms-digitalfix-catalog
+      context: ../backend/ms-pedidos360-catalog
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
-      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-pedidos360}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-pedidos360}
     ports:
       - "8082:8082"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-notify:
+  ms-pedidos360-notify:
     build:
-      context: ../backend/ms-digitalfix-notify
+      context: ../backend/ms-pedidos360-notify
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq-1
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-pedidos360}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-pedidos360}
     ports:
       - "8083:8083"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-audit:
+  ms-pedidos360-audit:
     build:
-      context: ../backend/ms-digitalfix-audit
+      context: ../backend/ms-pedidos360-audit
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
-      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-pedidos360}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-pedidos360}
     ports:
       - "8084:8084"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
-  ms-digitalfix-report:
+  ms-pedidos360-report:
     build:
-      context: ../backend/ms-digitalfix-report
+      context: ../backend/ms-pedidos360-report
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
-      ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
+      ORACLE_USERNAME: ${ORACLE_USERNAME:-pedidos360}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-pedidos360}
     ports:
       - "8085:8085"
     restart: unless-stopped
     networks:
-      - digitalfix-net
+      - pedidos360-net
 
 networks:
-  digitalfix-net:
+  pedidos360-net:
     external: true
