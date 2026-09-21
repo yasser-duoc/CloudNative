@@ -14,6 +14,12 @@ public class RestClientConfig {
     @Value("${pedidos360.services.catalog.base-url}")
     private String catalogBaseUrl;
 
+    @Value("${pedidos360.services.audit.base-url}")
+    private String auditBaseUrl;
+
+    @Value("${pedidos360.services.report.base-url}")
+    private String reportBaseUrl;
+
     @Bean
     public RestClient workOrdersRestClient(RestClient.Builder builder) {
         return builder.baseUrl(workOrdersBaseUrl).build();
@@ -22,5 +28,15 @@ public class RestClientConfig {
     @Bean
     public RestClient catalogRestClient(RestClient.Builder builder) {
         return builder.baseUrl(catalogBaseUrl).build();
+    }
+
+    @Bean
+    public RestClient auditRestClient(RestClient.Builder builder) {
+        return builder.baseUrl(auditBaseUrl).build();
+    }
+
+    @Bean
+    public RestClient reportRestClient(RestClient.Builder builder) {
+        return builder.baseUrl(reportBaseUrl).build();
     }
 }
