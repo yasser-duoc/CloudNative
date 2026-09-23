@@ -9,6 +9,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+azure:
+  activedirectory:
+    audience: ${AZURE_API_AUDIENCE:api://${AZURE_API_CLIENT_ID}}
   datasource:
     url: ${ORACLE_JDBC_URL:jdbc:oracle:thin:@//localhost:1521/FREEPDB1}
     username: ${ORACLE_USERNAME:pedidos360}
@@ -33,6 +36,9 @@ spring:
         spring.json.trusted.packages: "*"
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.pedidos360.report.domain.WorkOrderEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 management:
   endpoints:

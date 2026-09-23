@@ -8,9 +8,9 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 > Índice de valores que se obtienen aquí y dónde van:
 > | Valor | Variable (frontend) | Variable (backend/infra) |
 > |---|---|---|
-> | Tenant ID | `REACT_APP_AZURE_TENANT_ID` | `AZURE_TENANT_ID` |
-> | Client ID de la SPA | `REACT_APP_AZURE_CLIENT_ID` | — |
-> | Client ID de la API | `REACT_APP_API_SCOPE` (dentro de `api://...`) | `AZURE_API_CLIENT_ID` |
+> | Tenant ID | `AZURE_TENANT_ID` | `AZURE_TENANT_ID` |
+> | Client ID de la SPA | `AZURE_CLIENT_ID` | — |
+> | Client ID de la API | `API_SCOPE` (dentro de `api://...`) | `AZURE_API_CLIENT_ID` |
 
 ---
 
@@ -18,7 +18,7 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 
 1. Entra a [Azure Portal](https://portal.azure.com) → **Microsoft Entra ID** (Azure Active Directory).
 2. En **Overview** copia el **Tenant ID** (GUID).
-   - Va en `REACT_APP_AZURE_TENANT_ID` y `AZURE_TENANT_ID`.
+   - Va en `AZURE_TENANT_ID` y `AZURE_TENANT_ID`.
 
 ---
 
@@ -27,12 +27,12 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 1. En **Microsoft Entra ID → App registrations → New registration**.
 2. Nombre: `pedidos360-spa`.
 3. *Supported account types*: **Accounts in this organizational directory only (Single tenant)**.
-4. *Redirect URI* → platform **Single-page application (SPA)** → URI `http://localhost:3000`.
+4. *Redirect URI* → platform **Single-page application (SPA)** → URI `http://localhost:4200`.
 5. **Register**.
 6. Copia el **Application (client) ID**.
-   - Va en `REACT_APP_AZURE_CLIENT_ID`.
+   - Va en `AZURE_CLIENT_ID`.
 
-> Si levantas el frontend en otro puerto, agrega ese redirect URI (ej. `http://localhost:3000`).
+> Si levantas el frontend en otro puerto, agrega ese redirect URI (ej. `http://localhost:4200`).
 
 ---
 
@@ -57,7 +57,7 @@ Este scope es el `aud` que valida el BFF (`api://<API_CLIENT_ID>`) y el scope qu
    - *Who can consent*: **Admins and users**
    - *Admin consent display name / description*: `Access Pedidos360 as the user` / descripción libre.
 3. El valor final queda: **`api://<API_CLIENT_ID>/access_as_user`**.
-   - Va en `REACT_APP_API_SCOPE`.
+   - Va en `API_SCOPE`.
 
 ---
 
@@ -99,11 +99,11 @@ cp frontend/pedidos360-react/.env.example frontend/pedidos360-react/.env
 ```
 
 ```bash
-REACT_APP_AZURE_CLIENT_ID=<Client ID de pedidos360-spa>
-REACT_APP_AZURE_TENANT_ID=<Tenant ID>
-REACT_APP_AZURE_REDIRECT_URI=http://localhost:3000
-REACT_APP_API_SCOPE=api://<Client ID de pedidos360-api>/access_as_user
-REACT_APP_API_BASE_URL=http://localhost:8080
+AZURE_CLIENT_ID=<Client ID de pedidos360-spa>
+AZURE_TENANT_ID=<Tenant ID>
+AZURE_REDIRECT_URI=http://localhost:4200
+API_SCOPE=api://<Client ID de pedidos360-api>/access_as_user
+API_BASE_URL=http://localhost:8080
 ```
 
 ### Infraestructura (`infrastructure/.env`)

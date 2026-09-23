@@ -70,7 +70,7 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Repositorio GitHub | Ruta en este repo | Contenido |
 |---|---|---|
-| `pedidos360-frontend` | `frontend/pedidos360-react/` | React.js 18 + MSAL (config, ProtectedRoute, interceptor axios) |
+| `pedidos360-frontend` | `frontend/pedidos360-react/` | Angular 18 + MSAL Angular (guard de rutas, interceptor y roles) |
 | `ms-pedidos360-bff` | `backend/ms-pedidos360-bff/` | API Gateway interno / BFF + Spring Security |
 | `ms-pedidos360-workorders` | `backend/ms-pedidos360-workorders/` | Dominio órdenes (CRUD) + **productor** RabbitMQ/Kafka |
 | `ms-pedidos360-catalog` | `backend/ms-pedidos360-catalog/` | Catálogo de servicios y repuestos (Oracle) |
@@ -246,8 +246,8 @@ cd backend/ms-pedidos360-workorders && ./mvnw spring-boot:run
 cd frontend/pedidos360-react && npm install && npm start
 ```
 
-Para el frontend: copia `.env.example` a `.env` y rellena `REACT_APP_AZURE_CLIENT_ID`,
-`REACT_APP_AZURE_TENANT_ID` y `REACT_APP_API_SCOPE` con los valores reales de Azure AD.
+Para el frontend: copia `.env.example` a `.env` y rellena `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID` y `API_SCOPE` con los valores reales de Azure AD.
 
 ---
 
@@ -271,4 +271,5 @@ Compilación completa + tests (incluye validación del empaquetado):
 ```
 
 [GitHub Actions](.github/workflows/ci.yml) valida en cada push/PR a `main`:
-compila y ejecuta los tests de los 6 microservicios (Java 21) y compila el frontend React.
+compila y ejecuta los tests de los 6 microservicios (Java 21) y compila el frontend Angular.
+

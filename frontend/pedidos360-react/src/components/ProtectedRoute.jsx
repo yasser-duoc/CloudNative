@@ -20,7 +20,12 @@ export default function ProtectedRoute({ roles = [] }) {
 
   const userRoles = getRoles(accounts[0]);
 
-  if (roles.length > 0 && !roles.some((r) => userRoles.includes(r))) {
+  if (
+    roles.length > 0 &&
+    !roles.some((requiredRole) =>
+      userRoles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase())
+    )
+  ) {
     return <Navigate to="/forbidden" replace />;
   }
 

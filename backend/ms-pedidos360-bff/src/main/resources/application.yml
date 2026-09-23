@@ -14,7 +14,7 @@ azure:
   activedirectory:
     tenant-id: ${AZURE_TENANT_ID}
     api-client-id: ${AZURE_API_CLIENT_ID}
-    audience: api://${AZURE_API_CLIENT_ID}
+    audience: ${AZURE_API_AUDIENCE:api://${AZURE_API_CLIENT_ID}}
 
 pedidos360:
   services:

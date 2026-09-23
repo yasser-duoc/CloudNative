@@ -1,7 +1,7 @@
 # Dependencias
 /node_modules
 
-# Build (react-scripts)
+# Build (React)
 /build
 
 # Entorno / secretos (no subir .env real)

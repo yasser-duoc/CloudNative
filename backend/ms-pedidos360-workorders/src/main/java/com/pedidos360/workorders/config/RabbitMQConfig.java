@@ -15,7 +15,7 @@ public class RabbitMQConfig {
     public static final String EXCHANGE = "pedidos360.workorder.exchange";
 
     public static final String CREATED_ROUTING_KEY = "workorder.created";
-    public static final String STATUS_ROUTING_KEY = "workorder.status";
+    public static final String STATUS_ROUTING_KEY = "workorder.status.changed";
     public static final String COMPLETED_ROUTING_KEY = "workorder.completed";
 
     @Bean

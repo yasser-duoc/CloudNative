@@ -1,0 +1,18 @@
+package com.pedidos360.audit.config;
+
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+
+public final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
+    private final String audience;
+    public AudienceValidator(String audience) { this.audience = audience; }
+    @Override
+    public OAuth2TokenValidatorResult validate(Jwt token) {
+        String clientId = audience.startsWith("api://") ? audience.substring(6) : audience;
+        return token.getAudience().contains(audience) || token.getAudience().contains(clientId)
+                ? OAuth2TokenValidatorResult.success()
+                : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Invalid audience", null));
+    }
+}
