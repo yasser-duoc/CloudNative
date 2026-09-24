@@ -10,7 +10,7 @@ services:
       - "2181:2181"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
   zookeeper-2:
     image: confluentinc/cp-zookeeper:7.6.1
@@ -23,7 +23,7 @@ services:
       - "2182:2181"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
   zookeeper-3:
     image: confluentinc/cp-zookeeper:7.6.1
@@ -36,7 +36,7 @@ services:
       - "2183:2181"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
   kafka-1:
     image: confluentinc/cp-kafka:7.6.1
@@ -59,7 +59,7 @@ services:
       - "29092:29092"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
   kafka-2:
     image: confluentinc/cp-kafka:7.6.1
@@ -82,7 +82,7 @@ services:
       - "29093:29093"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
   kafka-3:
     image: confluentinc/cp-kafka:7.6.1
@@ -105,8 +105,8 @@ services:
       - "29094:29094"
     restart: unless-stopped
     networks:
-      - pedidos360-net
+      - digitalfix-net
 
 networks:
-  pedidos360-net:
+  digitalfix-net:
     external: true

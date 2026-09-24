@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [ms-pedidos360-bff, ms-pedidos360-workorders, ms-pedidos360-catalog, ms-pedidos360-notify, ms-pedidos360-audit, ms-pedidos360-report]
+        module: [ms-digitalfix-bff, ms-digitalfix-workorders, ms-digitalfix-catalog, ms-digitalfix-notify, ms-digitalfix-audit, ms-digitalfix-report]
     defaults:
       run:
         working-directory: backend/${{ matrix.module }}
@@ -32,14 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend/pedidos360-react
+        working-directory: frontend/digitalfix-react
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/pedidos360-react/package-lock.json
+          cache-dependency-path: frontend/digitalfix-react/package-lock.json
       - name: Instalar dependencias
         run: npm ci
       - name: Compilar frontend React

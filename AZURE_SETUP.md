@@ -1,4 +1,4 @@
-# Configuración de Azure AD (Entra ID) — Pedidos360
+# Configuración de Azure AD (Entra ID) — DigitalFix
 
 Guía paso a paso para dejar funcionando el flujo de autenticación/autorización
 (login MSAL → JWT → BFF). El código ya está listo; **solo falta esta configuración manual
@@ -25,7 +25,7 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 ## 2. App Registration de la SPA (frontend React)
 
 1. En **Microsoft Entra ID → App registrations → New registration**.
-2. Nombre: `pedidos360-spa`.
+2. Nombre: `digitalfix-spa`.
 3. *Supported account types*: **Accounts in this organizational directory only (Single tenant)**.
 4. *Redirect URI* → platform **Single-page application (SPA)** → URI `http://localhost:3000`.
 5. **Register**.
@@ -39,7 +39,7 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 ## 3. App Registration de la API (backend)
 
 1. **App registrations → New registration**.
-2. Nombre: `pedidos360-api`.
+2. Nombre: `digitalfix-api`.
 3. *Supported account types*: **Single tenant**.
 4. **Register**.
 5. Copia el **Application (client) ID**.
@@ -51,11 +51,11 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 
 Este scope es el `aud` que valida el BFF (`api://<API_CLIENT_ID>`) y el scope que pide el frontend.
 
-1. Abre `pedidos360-api` → **Expose an API**.
+1. Abre `digitalfix-api` → **Expose an API**.
 2. **Add a scope**:
    - *Scope name*: `access_as_user`
    - *Who can consent*: **Admins and users**
-   - *Admin consent display name / description*: `Access Pedidos360 as the user` / descripción libre.
+   - *Admin consent display name / description*: `Access DigitalFix as the user` / descripción libre.
 3. El valor final queda: **`api://<API_CLIENT_ID>/access_as_user`**.
    - Va en `REACT_APP_API_SCOPE`.
 
@@ -65,7 +65,7 @@ Este scope es el `aud` que valida el BFF (`api://<API_CLIENT_ID>`) y el scope qu
 
 Estos roles son el claim `roles` del JWT, que mapea el BFF a `ROLE_*` (Admin, Supervisor, Cliente, Auditor).
 
-1. Abre `pedidos360-api` → **App roles → Create app role**.
+1. Abre `digitalfix-api` → **App roles → Create app role**.
 2. Crea los **4 roles** con `Allowed member types = Users/Groups`:
 
    | Display name | Value | Description |
@@ -81,7 +81,7 @@ Estos roles son el claim `roles` del JWT, que mapea el BFF a `ROLE_*` (Admin, Su
 
 ## 6. Asignar roles a usuarios/grupos
 
-1. **Microsoft Entra ID → Enterprise applications** → busca `pedidos360-api`.
+1. **Microsoft Entra ID → Enterprise applications** → busca `digitalfix-api`.
 2. **Users and groups → Add user/group**.
 3. Selecciona el usuario o grupo y **elige el rol** correspondiente.
 4. **Assign**.
@@ -92,17 +92,17 @@ Estos roles son el claim `roles` del JWT, que mapea el BFF a `ROLE_*` (Admin, Su
 
 ## 7. Rellenar las variables de entorno
 
-### Frontend (`frontend/pedidos360-react/.env`)
+### Frontend (`frontend/digitalfix-react/.env`)
 
 ```bash
-cp frontend/pedidos360-react/.env.example frontend/pedidos360-react/.env
+cp frontend/digitalfix-react/.env.example frontend/digitalfix-react/.env
 ```
 
 ```bash
-REACT_APP_AZURE_CLIENT_ID=<Client ID de pedidos360-spa>
+REACT_APP_AZURE_CLIENT_ID=<Client ID de digitalfix-spa>
 REACT_APP_AZURE_TENANT_ID=<Tenant ID>
 REACT_APP_AZURE_REDIRECT_URI=http://localhost:3000
-REACT_APP_API_SCOPE=api://<Client ID de pedidos360-api>/access_as_user
+REACT_APP_API_SCOPE=api://<Client ID de digitalfix-api>/access_as_user
 REACT_APP_API_BASE_URL=http://localhost:8080
 ```
 
@@ -114,7 +114,7 @@ cp infrastructure/.env.example infrastructure/.env
 
 ```bash
 AZURE_TENANT_ID=<Tenant ID>
-AZURE_API_CLIENT_ID=<Client ID de pedidos360-api>
+AZURE_API_CLIENT_ID=<Client ID de digitalfix-api>
 ```
 
 ---

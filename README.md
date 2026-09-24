@@ -1,4 +1,4 @@
-# Pedidos360 — Plataforma de Órdenes de Trabajo de Mantención Eléctrica
+# DigitalFix — Plataforma de Órdenes de Trabajo de Mantención Eléctrica
 
 Plataforma **cloud-native** para la gestión de órdenes de trabajo de mantención eléctrica.
 Autenticación federada con **Azure AD (MSAL)**, backend de **microservicios Java/Spring Boot**,
@@ -25,12 +25,12 @@ flowchart LR
     subgraph AWS["AWS"]
         GW["AWS API Gateway<br/>(JWT authorizer)"]
         subgraph EC2["AWS EC2 — Docker Compose"]
-            BFF["ms-pedidos360-bff<br/>(Spring Security)"]
-            WO["ms-pedidos360-workorders"]
-            CAT["ms-pedidos360-catalog"]
-            NTF["ms-pedidos360-notify"]
-            AUD["ms-pedidos360-audit"]
-            RPT["ms-pedidos360-report"]
+            BFF["ms-digitalfix-bff<br/>(Spring Security)"]
+            WO["ms-digitalfix-workorders"]
+            CAT["ms-digitalfix-catalog"]
+            NTF["ms-digitalfix-notify"]
+            AUD["ms-digitalfix-audit"]
+            RPT["ms-digitalfix-report"]
         end
     end
 
@@ -70,14 +70,14 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Repositorio GitHub | Ruta en este repo | Contenido |
 |---|---|---|
-| `pedidos360-frontend` | `frontend/pedidos360-react/` | React.js 18 + MSAL (config, ProtectedRoute, interceptor axios) |
-| `ms-pedidos360-bff` | `backend/ms-pedidos360-bff/` | API Gateway interno / BFF + Spring Security |
-| `ms-pedidos360-workorders` | `backend/ms-pedidos360-workorders/` | Dominio órdenes (CRUD) + **productor** RabbitMQ/Kafka |
-| `ms-pedidos360-catalog` | `backend/ms-pedidos360-catalog/` | Catálogo de servicios y repuestos (Oracle) |
-| `ms-pedidos360-notify` | `backend/ms-pedidos360-notify/` | **Consumidor** RabbitMQ (emails/push, sin BD) |
-| `ms-pedidos360-audit` | `backend/ms-pedidos360-audit/` | **Consumidor** Kafka — timeline de auditoría (solo lectura) |
-| `ms-pedidos360-report` | `backend/ms-pedidos360-report/` | **Consumidor** Kafka — KPIs (solo lectura) |
-| `pedidos360-infra` | `infrastructure/` + `README.md` + `.env.example` | Docker Compose, topología de mensajería y documentación |
+| `digitalfix-frontend` | `frontend/digitalfix-react/` | React.js 18 + MSAL (config, ProtectedRoute, interceptor axios) |
+| `ms-digitalfix-bff` | `backend/ms-digitalfix-bff/` | API Gateway interno / BFF + Spring Security |
+| `ms-digitalfix-workorders` | `backend/ms-digitalfix-workorders/` | Dominio órdenes (CRUD) + **productor** RabbitMQ/Kafka |
+| `ms-digitalfix-catalog` | `backend/ms-digitalfix-catalog/` | Catálogo de servicios y repuestos (Oracle) |
+| `ms-digitalfix-notify` | `backend/ms-digitalfix-notify/` | **Consumidor** RabbitMQ (emails/push, sin BD) |
+| `ms-digitalfix-audit` | `backend/ms-digitalfix-audit/` | **Consumidor** Kafka — timeline de auditoría (solo lectura) |
+| `ms-digitalfix-report` | `backend/ms-digitalfix-report/` | **Consumidor** Kafka — KPIs (solo lectura) |
+| `digitalfix-infra` | `infrastructure/` + `README.md` + `.env.example` | Docker Compose, topología de mensajería y documentación |
 
 > **Nota sobre los `build.context`:** el archivo `infrastructure/compose.apps.yml` usa rutas
 > relativas `../backend/...` y `../frontend/...` que asumen la estructura de **monorepo**.
@@ -105,13 +105,13 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 | Servicio | Puerto | BD | Responsabilidad |
 |---|---|---|---|
-| `pedidos360-react` | 3000 | — | SPA React (servida por nginx) |
-| `ms-pedidos360-bff` | 8080 | — | Backend For Frontend + seguridad |
-| `ms-pedidos360-workorders` | 8081 | Oracle | CRUD órdenes + productor de eventos |
-| `ms-pedidos360-catalog` | 8082 | Oracle | CRUD servicios y repuestos |
-| `ms-pedidos360-notify` | 8083 | — | Consumidor RabbitMQ (email/push) |
-| `ms-pedidos360-audit` | 8084 | Oracle | Consumidor Kafka (timeline, solo lectura) |
-| `ms-pedidos360-report` | 8085 | Oracle | Consumidor Kafka (KPIs, solo lectura) |
+| `digitalfix-react` | 3000 | — | SPA React (servida por nginx) |
+| `ms-digitalfix-bff` | 8080 | — | Backend For Frontend + seguridad |
+| `ms-digitalfix-workorders` | 8081 | Oracle | CRUD órdenes + productor de eventos |
+| `ms-digitalfix-catalog` | 8082 | Oracle | CRUD servicios y repuestos |
+| `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ (email/push) |
+| `ms-digitalfix-audit` | 8084 | Oracle | Consumidor Kafka (timeline, solo lectura) |
+| `ms-digitalfix-report` | 8085 | Oracle | Consumidor Kafka (KPIs, solo lectura) |
 
 ---
 
@@ -119,31 +119,31 @@ carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su pro
 
 ### 5.1 RabbitMQ (3 colas + DLQ + bindings)
 
-Ownership: el **consumidor** (`ms-pedidos360-notify`) declara sus colas; el **productor**
-(`ms-pedidos360-workorders`) declara el exchange y publica. El `TopicExchange` permite enrutar
+Ownership: el **consumidor** (`ms-digitalfix-notify`) declara sus colas; el **productor**
+(`ms-digitalfix-workorders`) declara el exchange y publica. El `TopicExchange` permite enrutar
 por clave.
 
 | Exchange (topic) | Routing key | Cola principal | Dead Letter Exchange | DLQ |
 |---|---|---|---|---|
-| `pedidos360.workorder.exchange` | `workorder.created` | `workorder.created.queue` | `pedidos360.workorder.dlx` | `workorder.created.queue.dlq` |
-| `pedidos360.workorder.exchange` | `workorder.status.#` | `workorder.status.queue` | `pedidos360.workorder.dlx` | `workorder.status.queue.dlq` |
-| `pedidos360.workorder.exchange` | `workorder.completed` | `workorder.completed.queue` | `pedidos360.workorder.dlx` | `workorder.completed.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.created` | `workorder.created.queue` | `digitalfix.workorder.dlx` | `workorder.created.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.status.#` | `workorder.status.queue` | `digitalfix.workorder.dlx` | `workorder.status.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.completed` | `workorder.completed.queue` | `digitalfix.workorder.dlx` | `workorder.completed.queue.dlq` |
 
-- Las colas principales tienen `x-dead-letter-exchange = pedidos360.workorder.dlx` y un
+- Las colas principales tienen `x-dead-letter-exchange = digitalfix.workorder.dlx` y un
   `x-dead-letter-routing-key` propio.
 - `spring.rabbitmq.listener.simple.default-requeue-rejected=false` + reintentos (`max-attempts: 3`):
   si el procesamiento falla tras los reintentos, el mensaje se rechaza y se enruta a su DLQ.
-- La topología completa está en `ms-pedidos360-notify/src/main/java/com/pedidos360/notify/config/RabbitMQConfig.java`.
+- La topología completa está en `ms-digitalfix-notify/src/main/java/com/digitalfix/notify/config/RabbitMQConfig.java`.
 
 ### 5.2 Kafka (tópicos)
 
-Configurados en `ms-pedidos360-workorders/src/main/java/com/pedidos360/workorders/config/KafkaConfig.java`
+Configurados en `ms-digitalfix-workorders/src/main/java/com/digitalfix/workorders/config/KafkaConfig.java`
 (vía `NewTopic`), con 3 particiones y factor de replicación 3 (acorde a los 3 brokers).
 
 | Tópico | Particiones | Replicas | Consumidor (group-id) |
 |---|---|---|---|
-| `workorder.audit` | 3 | 3 | `ms-pedidos360-audit` |
-| `workorder.kpi` | 3 | 3 | `ms-pedidos360-report` |
+| `workorder.audit` | 3 | 3 | `ms-digitalfix-audit` |
+| `workorder.kpi` | 3 | 3 | `ms-digitalfix-report` |
 
 - Productor: `JsonSerializer` con `spring.json.add.type.headers=false`.
 - Consumidores: `JsonDeserializer` con `spring.json.use.type.headers=false` y
@@ -162,17 +162,17 @@ Configurados en `ms-pedidos360-workorders/src/main/java/com/pedidos360/workorder
    `Authorization: Bearer <access_token>` a cada llamada. Los roles (`roles`) y scopes (`scp`)
    se leen de los claims del JWT y los valida `ProtectedRoute`.
 4. **API Gateway (AWS)**: valida la firma/issuer del JWT y reenvía la petición al BFF.
-5. **BFF (`ms-pedidos360-bff`)**: con `NimbusJwtDecoder` valida:
+5. **BFF (`ms-digitalfix-bff`)**: con `NimbusJwtDecoder` valida:
    - **Issuer**: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`.
    - **Audience**: `api://<API_CLIENT_ID>` (vía `AudienceValidator`).
    - **Firma y vigencia**: `JwtValidators.createDefaultWithIssuer(...)` (firma RS256 + `exp`).
    - **Autorización por rol**: `roles` → `ROLE_*` y `scp` → `SCOPE_*`
-     (`Pedidos360JwtAuthenticationConverter`) con `hasRole(...)`/`hasAnyRole(...)`.
+     (`DigitalFixJwtAuthenticationConverter`) con `hasRole(...)`/`hasAnyRole(...)`.
    - Respuestas de error: `401` (`RestAuthenticationEntryPoint`) y `403` (`RestAccessDeniedHandler`).
 6. **Microservicio de dominio**: el BFF **propaga el mismo JWT** (`Bearer <token>`) con
    `RestClient`; el microservicio lo revalida (Resource Server) y persiste en Oracle.
 
-**Flujo estricto:** `JWT → AWS API Gateway → ms-pedidos360-bff → microservicio de dominio`.
+**Flujo estricto:** `JWT → AWS API Gateway → ms-digitalfix-bff → microservicio de dominio`.
 
 **Roles del sistema:** `Admin`, `Supervisor`, `Cliente`, `Auditor`.
 
@@ -205,7 +205,7 @@ cp infrastructure/.env.example infrastructure/.env
 
 ```bash
 # 0. Red compartida entre todos los compose
-docker network create pedidos360-net
+docker network create digitalfix-net
 
 # 1. Base de datos Oracle (los microservicios de dominio dependen de ella)
 docker compose -f infrastructure/compose.oracle.yml --env-file infrastructure/.env up -d
@@ -239,11 +239,11 @@ docker ps
 
 ```bash
 # Backend (requiere Oracle/RabbitMQ/Kafka accesibles en localhost)
-cd backend/ms-pedidos360-bff && ./mvnw spring-boot:run
-cd backend/ms-pedidos360-workorders && ./mvnw spring-boot:run
+cd backend/ms-digitalfix-bff && ./mvnw spring-boot:run
+cd backend/ms-digitalfix-workorders && ./mvnw spring-boot:run
 
 # Frontend (React)
-cd frontend/pedidos360-react && npm install && npm start
+cd frontend/digitalfix-react && npm install && npm start
 ```
 
 Para el frontend: copia `.env.example` a `.env` y rellena `REACT_APP_AZURE_CLIENT_ID`,
@@ -257,11 +257,11 @@ Pruebas unitarias del backend (JUnit 5 + Mockito, sin infraestructura externa). 
 con el wrapper Maven de cada módulo:
 
 ```bash
-cd backend/ms-pedidos360-bff         && ./mvnw test
-cd backend/ms-pedidos360-workorders  && ./mvnw test
-cd backend/ms-pedidos360-catalog     && ./mvnw test
-cd backend/ms-pedidos360-audit       && ./mvnw test
-cd backend/ms-pedidos360-report      && ./mvnw test
+cd backend/ms-digitalfix-bff         && ./mvnw test
+cd backend/ms-digitalfix-workorders  && ./mvnw test
+cd backend/ms-digitalfix-catalog     && ./mvnw test
+cd backend/ms-digitalfix-audit       && ./mvnw test
+cd backend/ms-digitalfix-report      && ./mvnw test
 ```
 
 Compilación completa + tests (incluye validación del empaquetado):
