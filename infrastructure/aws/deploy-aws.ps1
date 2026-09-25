@@ -30,7 +30,7 @@ if (-not (Test-Path "$PSScriptRoot\digitalfix-key.pem")) {
 $sgId = aws ec2 describe-security-groups --region $Region --group-names $Sg --query "SecurityGroups[0].GroupId" --output text 2>$null
 if (-not $sgId) {
     $sgId = aws ec2 create-security-group --region $Region --group-name $Sg --description "DigitalFix demo" --query "GroupId" --output text
-    foreach ($port in @(22, 3000, 8080, 8081, 8082, 8083, 8084, 8085, 15672)) {
+    foreach ($port in @(22, 3000, 8080, 8081, 8082, 8083, 8084, 8085)) {
         aws ec2 authorize-security-group-ingress --region $Region --group-id $sgId --protocol tcp --port $port --cidr 0.0.0.0/0 | Out-Null
     }
 }
@@ -53,7 +53,6 @@ Write-Host "IP: $Ip"
 Write-Host "== 5/5 Listo. El stack se construye dentro de la instancia (10-20 min)."
 Write-Host "   Frontend:      http://$Ip`:3000"
 Write-Host "   BFF health:    http://$Ip`:8080/actuator/health"
-Write-Host "   RabbitMQ UI:   http://$Ip`:15672  (digitalfix / DigitalFix2026!)"
 Write-Host "   Ver progreso:  ssh -i $PSScriptRoot\digitalfix-key.pem ubuntu@$Ip  luego:  tail -f /var/log/cloud-init-output.log"
 Write-Host ""
 Write-Host "   >>> AL TERMINAR LA DEMO (para no gastar credito) <<<"

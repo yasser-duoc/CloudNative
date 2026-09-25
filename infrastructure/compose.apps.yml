@@ -60,11 +60,6 @@ services:
   ms-digitalfix-notify:
     build:
       context: ../backend/ms-digitalfix-notify
-    environment:
-      SPRING_RABBITMQ_HOST: rabbitmq-1
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
     ports:
       - "8083:8083"
     restart: unless-stopped
@@ -77,7 +72,6 @@ services:
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
       ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
       ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}
@@ -93,7 +87,6 @@ services:
     environment:
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       ORACLE_JDBC_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
       ORACLE_USERNAME: ${ORACLE_USERNAME:-digitalfix}
       ORACLE_PASSWORD: ${ORACLE_PASSWORD:-digitalfix}

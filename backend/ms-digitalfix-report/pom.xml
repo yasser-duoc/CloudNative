@@ -15,7 +15,7 @@
     <artifactId>ms-digitalfix-report</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ms-digitalfix-report</name>
-    <description>Microservicio de reportes/KPIs (Kafka consumer) - DigitalFix</description>
+    <description>Microservicio de reportes/KPIs - DigitalFix</description>
 
     <properties>
         <java.version>21</java.version>
@@ -39,10 +39,6 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
@@ -54,11 +50,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

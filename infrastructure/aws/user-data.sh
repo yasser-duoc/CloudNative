@@ -1,6 +1,6 @@
 #!/bin/bash
 # Cloud-init para la instancia EC2 de DigitalFix (Ubuntu 22.04).
-# Instala Docker, clona el repo, crea el .env y levanta las 4 pilas de compose.
+# Instala Docker, clona el repo, crea el .env y levanta las pilas de compose.
 # Los valores AZURE_TENANT_ID / AZURE_API_CLIENT_ID se inyectan al lanzar la instancia.
 
 set -euo pipefail
@@ -30,15 +30,10 @@ AZURE_TENANT_ID=${AZURE_TENANT_ID}
 AZURE_API_CLIENT_ID=${AZURE_API_CLIENT_ID}
 ORACLE_USERNAME=digitalfix
 ORACLE_PASSWORD=DigitalFix2026!
-RABBITMQ_USER=digitalfix
-RABBITMQ_PASSWORD=DigitalFix2026!
-RABBITMQ_ERLANG_COOKIE=digitalfix-cookie
 EOF
 
 docker network create digitalfix-net || true
 docker compose -f infrastructure/compose.oracle.yml   --env-file infrastructure/.env up -d
-docker compose -f infrastructure/compose.rabbitmq.yml --env-file infrastructure/.env up -d
-docker compose -f infrastructure/compose.kafka.yml    --env-file infrastructure/.env up -d
 sleep 30
 docker compose -f infrastructure/compose.apps.yml      --env-file infrastructure/.env up -d --build
 

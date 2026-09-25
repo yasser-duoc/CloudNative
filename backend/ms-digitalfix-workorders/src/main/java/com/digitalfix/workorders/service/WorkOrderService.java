@@ -4,28 +4,21 @@ import com.digitalfix.workorders.domain.WorkOrder;
 import com.digitalfix.workorders.domain.WorkOrderStatus;
 import com.digitalfix.workorders.domain.dto.WorkOrderRequest;
 import com.digitalfix.workorders.domain.dto.WorkOrderResponse;
-import com.digitalfix.workorders.event.WorkOrderEvent;
-import com.digitalfix.workorders.publisher.WorkOrderEventPublisher;
 import com.digitalfix.workorders.repository.WorkOrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @Transactional
 public class WorkOrderService {
 
     private final WorkOrderRepository repository;
-    private final WorkOrderEventPublisher publisher;
-
-    public WorkOrderService(WorkOrderRepository repository, WorkOrderEventPublisher publisher) {
+    public WorkOrderService(WorkOrderRepository repository) {
         this.repository = repository;
-        this.publisher = publisher;
     }
 
     public WorkOrderResponse create(WorkOrderRequest request, String createdBy) {
@@ -37,16 +30,6 @@ public class WorkOrderService {
         order.setCreatedBy(createdBy);
 
         WorkOrder saved = repository.save(order);
-
-        publisher.publish(new WorkOrderEvent(
-                UUID.randomUUID().toString(),
-                WorkOrderEvent.TYPE_CREATED,
-                saved.getId(),
-                saved.getStatus(),
-                saved.getCustomerName(),
-                null,
-                createdBy,
-                Instant.now()));
 
         return toResponse(saved);
     }
@@ -64,23 +47,7 @@ public class WorkOrderService {
     public WorkOrderResponse updateStatus(Long id, WorkOrderStatus status, String actor) {
         WorkOrder order = findEntity(id);
         order.setStatus(status);
-        order.setUpdatedAt(Instant.now());
-
         WorkOrder saved = repository.save(order);
-
-        String eventType = status == WorkOrderStatus.COMPLETED
-                ? WorkOrderEvent.TYPE_COMPLETED
-                : WorkOrderEvent.TYPE_STATUS_CHANGED;
-
-        publisher.publish(new WorkOrderEvent(
-                UUID.randomUUID().toString(),
-                eventType,
-                saved.getId(),
-                saved.getStatus(),
-                saved.getCustomerName(),
-                null,
-                actor,
-                Instant.now()));
 
         return toResponse(saved);
     }

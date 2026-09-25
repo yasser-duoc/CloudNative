@@ -1,274 +1,111 @@
-# DigitalFix — Plataforma de Órdenes de Trabajo de Mantención Eléctrica
+# DigitalFix
 
-Plataforma **cloud-native** para la gestión de órdenes de trabajo de mantención eléctrica.
-Autenticación federada con **Azure AD (MSAL)**, backend de **microservicios Java/Spring Boot**,
-mensajería asíncrona con **RabbitMQ** y streaming/analítica con **Kafka**, todo desplegado en
-**AWS EC2** con **Docker Compose**.
+Plataforma cloud-native para gestionar órdenes de trabajo de mantención eléctrica.
+La solución usa React, Azure AD/MSAL, microservicios Java con Spring Boot, Oracle,
+AWS API Gateway y Docker Compose sobre AWS EC2.
 
----
+## Arquitectura actual
 
-## 1. Arquitectura
-
-```mermaid
-flowchart LR
-    subgraph Client["Cliente (Browser)"]
-        FE["React SPA<br/>(MSAL React + axios interceptor + ProtectedRoute)"]
-    end
-
-    subgraph Azure["Azure AD (IDaaS)"]
-        AAD["Azure AD<br/>login.microsoftonline.com/&lt;TENANT_ID&gt;/v2.0"]
-    end
-
-    FE -->|"1. login + consent"| AAD
-    AAD -->|"2. access_token (JWT)"| FE
-
-    subgraph AWS["AWS"]
-        GW["AWS API Gateway<br/>(JWT authorizer)"]
-        subgraph EC2["AWS EC2 — Docker Compose"]
-            BFF["ms-digitalfix-bff<br/>(Spring Security)"]
-            WO["ms-digitalfix-workorders"]
-            CAT["ms-digitalfix-catalog"]
-            NTF["ms-digitalfix-notify"]
-            AUD["ms-digitalfix-audit"]
-            RPT["ms-digitalfix-report"]
-        end
-    end
-
-    FE -->|"3. HTTPS + Bearer JWT"| GW
-    GW -->|"valida JWT"| BFF
-    BFF -->|"propaga JWT"| WO
-    BFF -->|"propaga JWT"| CAT
-    BFF -->|"propaga JWT"| AUD
-    BFF -->|"propaga JWT"| RPT
-
-    subgraph Data["Persistencia / Mensajería"]
-        ORA[("Oracle Free<br/>(FREEPDB1)")]
-        RMQ[["RabbitMQ<br/>(clúster 2 nodos)"]]
-        KFK[["Kafka<br/>(3 brokers + 3 Zookeeper)"]]
-    end
-
-    WO --> ORA
-    CAT --> ORA
-    AUD --> ORA
-    RPT --> ORA
-
-    WO -->|"produce eventos"| RMQ
-    RMQ -->|"consume"| NTF
-
-    WO -->|"produce"| KFK
-    KFK -->|"topic workorder.audit"| AUD
-    KFK -->|"topic workorder.kpi"| RPT
+```text
+React + MSAL
+      │ JWT
+      ▼
+AWS API Gateway
+      │
+      ▼
+Spring Boot BFF
+      │
+      ├── ms-digitalfix-workorders
+      ├── ms-digitalfix-catalog
+      ├── ms-digitalfix-audit
+      └── ms-digitalfix-report
+               │
+               ▼
+             Oracle
 ```
 
----
+RabbitMQ y Kafka no forman parte de esta etapa. Las notificaciones, auditoría
+basada en eventos y reportería por streaming quedan preparadas como módulos
+independientes para una incorporación posterior.
 
-## 2. Mapa de repositorios
+## Servicios
 
-Entrega sugerida como **multi-repositorio** (o carpetas dentro de este monorepo). Cada
-carpeta `backend/...` es un proyecto Maven independiente y autónomo (con su propio `pom.xml`,
-`Dockerfile` y `.gitignore`).
+| Servicio | Puerto | Base de datos | Responsabilidad |
+|---|---:|---|---|
+| `digitalfix-react` | 3000 | — | SPA React servida por nginx |
+| `ms-digitalfix-bff` | 8080 | — | BFF, seguridad JWT y proxy |
+| `ms-digitalfix-workorders` | 8081 | Oracle | CRUD de órdenes |
+| `ms-digitalfix-catalog` | 8082 | Oracle | Servicios, repuestos y stock |
+| `ms-digitalfix-notify` | 8083 | — | Módulo de notificaciones, sin broker por ahora |
+| `ms-digitalfix-audit` | 8084 | Oracle | Consulta de auditoría |
+| `ms-digitalfix-report` | 8085 | Oracle | Consulta de reportes y KPIs |
 
-| Repositorio GitHub | Ruta en este repo | Contenido |
-|---|---|---|
-| `digitalfix-frontend` | `frontend/digitalfix-react/` | React.js 18 + MSAL (config, ProtectedRoute, interceptor axios) |
-| `ms-digitalfix-bff` | `backend/ms-digitalfix-bff/` | API Gateway interno / BFF + Spring Security |
-| `ms-digitalfix-workorders` | `backend/ms-digitalfix-workorders/` | Dominio órdenes (CRUD) + **productor** RabbitMQ/Kafka |
-| `ms-digitalfix-catalog` | `backend/ms-digitalfix-catalog/` | Catálogo de servicios y repuestos (Oracle) |
-| `ms-digitalfix-notify` | `backend/ms-digitalfix-notify/` | **Consumidor** RabbitMQ (emails/push, sin BD) |
-| `ms-digitalfix-audit` | `backend/ms-digitalfix-audit/` | **Consumidor** Kafka — timeline de auditoría (solo lectura) |
-| `ms-digitalfix-report` | `backend/ms-digitalfix-report/` | **Consumidor** Kafka — KPIs (solo lectura) |
-| `digitalfix-infra` | `infrastructure/` + `README.md` + `.env.example` | Docker Compose, topología de mensajería y documentación |
+## Tecnologías
 
-> **Nota sobre los `build.context`:** el archivo `infrastructure/compose.apps.yml` usa rutas
-> relativas `../backend/...` y `../frontend/...` que asumen la estructura de **monorepo**.
-> Si entregas repositorios separados, clónalos como carpetas hermanas o reemplaza `build` por
-> `image: <registro>/ms-...:latest` tras publicar las imágenes en un registro de contenedores.
+- Frontend: React 18, MSAL React, MSAL Browser y axios.
+- Backend: Java 21, Spring Boot 3.3, Spring Security y Spring Data JPA.
+- Seguridad: OAuth 2.0 / OpenID Connect, Azure AD y JWT.
+- API Gateway: AWS API Gateway con JWT Authorizer.
+- Base de datos: Oracle Free 23c mediante `ojdbc11`.
+- Despliegue: AWS EC2, Docker y Docker Compose.
 
----
+## Ejecución local
 
-## 3. Tecnologías
+Requisitos: Docker, Docker Compose, Java 21, Node.js 20 y credenciales de Azure AD.
 
-| Capa | Tecnología |
-|---|---|
-| Frontend | React.js 18 · `@azure/msal-react` v2 · `@azure/msal-browser` v3 · axios |
-| Backend | Java 21 · Spring Boot 3.3 · Spring Security · Spring Data JPA |
-| Seguridad | OAuth 2.0 / OpenID Connect — Azure AD v2.0 · JWT (issuer, audience, firma, vigencia) |
-| API Gateway | AWS API Gateway (JWT authorizer) |
-| BD | Oracle (Oracle Free 23c / `ojdbc11`) |
-| Mensajería | RabbitMQ 3.13 (clúster 2 nodos) — correo/push |
-| Streaming | Apache Kafka 7.6 (3 brokers + 3 Zookeeper) — auditoría/KPIs |
-| Despliegue | AWS EC2 · Docker · Docker Compose |
-
----
-
-## 4. Microservicios y puertos
-
-| Servicio | Puerto | BD | Responsabilidad |
-|---|---|---|---|
-| `digitalfix-react` | 3000 | — | SPA React (servida por nginx) |
-| `ms-digitalfix-bff` | 8080 | — | Backend For Frontend + seguridad |
-| `ms-digitalfix-workorders` | 8081 | Oracle | CRUD órdenes + productor de eventos |
-| `ms-digitalfix-catalog` | 8082 | Oracle | CRUD servicios y repuestos |
-| `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ (email/push) |
-| `ms-digitalfix-audit` | 8084 | Oracle | Consumidor Kafka (timeline, solo lectura) |
-| `ms-digitalfix-report` | 8085 | Oracle | Consumidor Kafka (KPIs, solo lectura) |
-
----
-
-## 5. Topología de mensajería
-
-### 5.1 RabbitMQ (3 colas + DLQ + bindings)
-
-Ownership: el **consumidor** (`ms-digitalfix-notify`) declara sus colas; el **productor**
-(`ms-digitalfix-workorders`) declara el exchange y publica. El `TopicExchange` permite enrutar
-por clave.
-
-| Exchange (topic) | Routing key | Cola principal | Dead Letter Exchange | DLQ |
-|---|---|---|---|---|
-| `digitalfix.workorder.exchange` | `workorder.created` | `workorder.created.queue` | `digitalfix.workorder.dlx` | `workorder.created.queue.dlq` |
-| `digitalfix.workorder.exchange` | `workorder.status.#` | `workorder.status.queue` | `digitalfix.workorder.dlx` | `workorder.status.queue.dlq` |
-| `digitalfix.workorder.exchange` | `workorder.completed` | `workorder.completed.queue` | `digitalfix.workorder.dlx` | `workorder.completed.queue.dlq` |
-
-- Las colas principales tienen `x-dead-letter-exchange = digitalfix.workorder.dlx` y un
-  `x-dead-letter-routing-key` propio.
-- `spring.rabbitmq.listener.simple.default-requeue-rejected=false` + reintentos (`max-attempts: 3`):
-  si el procesamiento falla tras los reintentos, el mensaje se rechaza y se enruta a su DLQ.
-- La topología completa está en `ms-digitalfix-notify/src/main/java/com/digitalfix/notify/config/RabbitMQConfig.java`.
-
-### 5.2 Kafka (tópicos)
-
-Configurados en `ms-digitalfix-workorders/src/main/java/com/digitalfix/workorders/config/KafkaConfig.java`
-(vía `NewTopic`), con 3 particiones y factor de replicación 3 (acorde a los 3 brokers).
-
-| Tópico | Particiones | Replicas | Consumidor (group-id) |
-|---|---|---|---|
-| `workorder.audit` | 3 | 3 | `ms-digitalfix-audit` |
-| `workorder.kpi` | 3 | 3 | `ms-digitalfix-report` |
-
-- Productor: `JsonSerializer` con `spring.json.add.type.headers=false`.
-- Consumidores: `JsonDeserializer` con `spring.json.use.type.headers=false` y
-  `spring.json.value.default.type` (contrato desacoplado, cada servicio usa su propio DTO).
-- Manejo de errores con `DefaultErrorHandler` (reintentos + log, sin bucle infinito).
-
----
-
-## 6. Flujo de seguridad JWT (para la presentación)
-
-1. **Login (interactivo)**: el usuario entra al SPA React. `ProtectedRoute` (MSAL React) detecta que no hay
-   sesión y redirige a Azure AD (`authority = https://login.microsoftonline.com/<TENANT_ID>`).
-2. **Consent**: Azure AD autentica al usuario y emite un `access_token` (JWT) para el
-   `clientId` de la SPA y con el scope `api://<API_CLIENT_ID>/access_as_user`.
-3. **Peticiones protegidas**: el interceptor de axios (`httpClient`) adjunta
-   `Authorization: Bearer <access_token>` a cada llamada. Los roles (`roles`) y scopes (`scp`)
-   se leen de los claims del JWT y los valida `ProtectedRoute`.
-4. **API Gateway (AWS)**: valida la firma/issuer del JWT y reenvía la petición al BFF.
-5. **BFF (`ms-digitalfix-bff`)**: con `NimbusJwtDecoder` valida:
-   - **Issuer**: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`.
-   - **Audience**: `api://<API_CLIENT_ID>` (vía `AudienceValidator`).
-   - **Firma y vigencia**: `JwtValidators.createDefaultWithIssuer(...)` (firma RS256 + `exp`).
-   - **Autorización por rol**: `roles` → `ROLE_*` y `scp` → `SCOPE_*`
-     (`DigitalFixJwtAuthenticationConverter`) con `hasRole(...)`/`hasAnyRole(...)`.
-   - Respuestas de error: `401` (`RestAuthenticationEntryPoint`) y `403` (`RestAccessDeniedHandler`).
-6. **Microservicio de dominio**: el BFF **propaga el mismo JWT** (`Bearer <token>`) con
-   `RestClient`; el microservicio lo revalida (Resource Server) y persiste en Oracle.
-
-**Flujo estricto:** `JWT → AWS API Gateway → ms-digitalfix-bff → microservicio de dominio`.
-
-**Roles del sistema:** `Admin`, `Supervisor`, `Cliente`, `Auditor`.
-
-| Recurso (BFF) | Roles permitidos |
-|---|---|
-| `/api/workorders/**` | Admin, Supervisor, Cliente |
-| `/api/catalog/**` | Admin, Supervisor (lectura: + Cliente) |
-| `/api/audit/**` | Auditor (y Admin) |
-| `/api/report/**` | Admin, Auditor |
-
----
-
-## 7. Levantar el entorno (orden exacto)
-
-### 7.1 Prerrequisitos
-
-- Docker + Docker Compose v2
-- `AZURE_TENANT_ID` y `AZURE_API_CLIENT_ID` (App Registration de Azure AD)
-- Configuración completa de Azure AD (app registrations, scope y roles): ver [`AZURE_SETUP.md`](./AZURE_SETUP.md)
-
-### 7.2 Variables de entorno
-
-Copia el ejemplo y rellena los valores reales:
-
-```bash
-cp infrastructure/.env.example infrastructure/.env
-```
-
-### 7.3 Comandos (en orden)
-
-```bash
-# 0. Red compartida entre todos los compose
+```powershell
+Copy-Item infrastructure\.env.example infrastructure\.env
 docker network create digitalfix-net
-
-# 1. Base de datos Oracle (los microservicios de dominio dependen de ella)
-docker compose -f infrastructure/compose.oracle.yml --env-file infrastructure/.env up -d
-
-# 2. RabbitMQ (clúster de 2 nodos)
-docker compose -f infrastructure/compose.rabbitmq.yml --env-file infrastructure/.env up -d
-
-# 3. Kafka (3 brokers + 3 Zookeeper)
-docker compose -f infrastructure/compose.kafka.yml --env-file infrastructure/.env up -d
-
-# 4. Aplicaciones (frontend + 6 microservicios)
-docker compose -f infrastructure/compose.apps.yml --env-file infrastructure/.env up -d --build
+docker compose -f infrastructure\compose.oracle.yml --env-file infrastructure\.env up -d
+docker compose -f infrastructure\compose.apps.yml --env-file infrastructure\.env up -d --build
 ```
 
-Verificación:
+Para levantar solo un servicio backend:
 
-```bash
-docker compose -f infrastructure/compose.apps.yml ps
-docker ps
-# RabbitMQ management: http://localhost:15672
-# Frontend:           http://localhost:3000
-# BFF health:         http://localhost:8080/actuator/health
+```powershell
+Set-Location backend\ms-digitalfix-workorders
+.\mvnw.cmd -q -B verify
 ```
 
-> El orden importa: Oracle y los brokers primero, luego las aplicaciones. Los microservicios
-> usan `restart: unless-stopped` y reconectan automáticamente si un dependiente aún no está listo.
+El frontend se ejecuta con:
 
----
-
-## 8. Ejecución local (desarrollo, sin Docker)
-
-```bash
-# Backend (requiere Oracle/RabbitMQ/Kafka accesibles en localhost)
-cd backend/ms-digitalfix-bff && ./mvnw spring-boot:run
-cd backend/ms-digitalfix-workorders && ./mvnw spring-boot:run
-
-# Frontend (React)
-cd frontend/digitalfix-react && npm install && npm start
+```powershell
+Set-Location frontend\digitalfix-react
+npm ci
+npm start
 ```
 
-Para el frontend: copia `.env.example` a `.env` y rellena `REACT_APP_AZURE_CLIENT_ID`,
-`REACT_APP_AZURE_TENANT_ID` y `REACT_APP_API_SCOPE` con los valores reales de Azure AD.
+## Variables de entorno
 
----
+Las variables mínimas están en [`infrastructure/.env.example`](infrastructure/.env.example):
 
-## 9. Tests y CI
+- `AZURE_TENANT_ID`
+- `AZURE_API_CLIENT_ID`
+- `ORACLE_USERNAME`
+- `ORACLE_PASSWORD`
 
-Pruebas unitarias del backend (JUnit 5 + Mockito, sin infraestructura externa). Se ejecutan
-con el wrapper Maven de cada módulo:
+No se requieren variables de RabbitMQ ni Kafka.
 
-```bash
-cd backend/ms-digitalfix-bff         && ./mvnw test
-cd backend/ms-digitalfix-workorders  && ./mvnw test
-cd backend/ms-digitalfix-catalog     && ./mvnw test
-cd backend/ms-digitalfix-audit       && ./mvnw test
-cd backend/ms-digitalfix-report      && ./mvnw test
+## Estructura
+
+```text
+frontend/digitalfix-react/
+backend/ms-digitalfix-bff/
+backend/ms-digitalfix-workorders/
+backend/ms-digitalfix-catalog/
+backend/ms-digitalfix-notify/
+backend/ms-digitalfix-audit/
+backend/ms-digitalfix-report/
+infrastructure/
 ```
 
-Compilación completa + tests (incluye validación del empaquetado):
+## Despliegue AWS
 
-```bash
-./mvnw -q -B verify
+```powershell
+.\infrastructure\aws\deploy-aws.ps1 `
+  -TenantId "<TENANT_ID>" `
+  -ApiClientId "<API_CLIENT_ID>"
 ```
 
-[GitHub Actions](.github/workflows/ci.yml) valida en cada push/PR a `main`:
-compila y ejecuta los tests de los 6 microservicios (Java 21) y compila el frontend React.
+El script despliega Oracle y las aplicaciones del proyecto. No crea instancias
+ni abre puertos para RabbitMQ, Kafka o Zookeeper.

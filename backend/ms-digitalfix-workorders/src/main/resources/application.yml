@@ -22,20 +22,6 @@ spring:
       hibernate:
         format_sql: true
     show-sql: false
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:digitalfix}
-    password: ${RABBITMQ_PASSWORD:digitalfix}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
-    admin:
-      fail-fast: false
 
 management:
   endpoints:
