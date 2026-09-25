@@ -28,12 +28,12 @@ cd CloudNative
 cat > infrastructure/.env <<EOF
 AZURE_TENANT_ID=${AZURE_TENANT_ID}
 AZURE_API_CLIENT_ID=${AZURE_API_CLIENT_ID}
-ORACLE_USERNAME=digitalfix
-ORACLE_PASSWORD=DigitalFix2026!
+POSTGRES_USERNAME=digitalfix
+POSTGRES_PASSWORD=DigitalFix2026!
 EOF
 
 docker network create digitalfix-net || true
-docker compose -f infrastructure/compose.oracle.yml   --env-file infrastructure/.env up -d
+docker compose -f infrastructure/compose.postgres.yml --env-file infrastructure/.env up -d
 sleep 30
 docker compose -f infrastructure/compose.apps.yml      --env-file infrastructure/.env up -d --build
 

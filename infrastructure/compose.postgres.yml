@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: digitalfix-postgres
+    environment:
+      POSTGRES_DB: digitalfix
+      POSTGRES_USER: ${POSTGRES_USERNAME:-digitalfix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-digitalfix} -d digitalfix"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+volumes:
+  postgres-data:
+
+networks:
+  digitalfix-net:
+    external: true

@@ -1,7 +1,7 @@
 # DigitalFix
 
 Plataforma cloud-native para gestionar órdenes de trabajo de mantención eléctrica.
-La solución usa React, Azure AD/MSAL, microservicios Java con Spring Boot, Oracle,
+La solución usa React, Azure AD/MSAL, microservicios Java con Spring Boot, PostgreSQL,
 AWS API Gateway y Docker Compose sobre AWS EC2.
 
 ## Arquitectura actual
@@ -21,7 +21,7 @@ Spring Boot BFF
       └── ms-digitalfix-report
                │
                ▼
-             Oracle
+           PostgreSQL
 ```
 
 RabbitMQ y Kafka no forman parte de esta etapa. Las notificaciones, auditoría
@@ -34,11 +34,11 @@ independientes para una incorporación posterior.
 |---|---:|---|---|
 | `digitalfix-react` | 3000 | — | SPA React servida por nginx |
 | `ms-digitalfix-bff` | 8080 | — | BFF, seguridad JWT y proxy |
-| `ms-digitalfix-workorders` | 8081 | Oracle | CRUD de órdenes |
-| `ms-digitalfix-catalog` | 8082 | Oracle | Servicios, repuestos y stock |
+| `ms-digitalfix-workorders` | 8081 | PostgreSQL | CRUD de órdenes |
+| `ms-digitalfix-catalog` | 8082 | PostgreSQL | Servicios, repuestos y stock |
 | `ms-digitalfix-notify` | 8083 | — | Módulo de notificaciones, sin broker por ahora |
-| `ms-digitalfix-audit` | 8084 | Oracle | Consulta de auditoría |
-| `ms-digitalfix-report` | 8085 | Oracle | Consulta de reportes y KPIs |
+| `ms-digitalfix-audit` | 8084 | PostgreSQL | Consulta de auditoría |
+| `ms-digitalfix-report` | 8085 | PostgreSQL | Consulta de reportes y KPIs |
 
 ## Tecnologías
 
@@ -46,7 +46,7 @@ independientes para una incorporación posterior.
 - Backend: Java 21, Spring Boot 3.3, Spring Security y Spring Data JPA.
 - Seguridad: OAuth 2.0 / OpenID Connect, Azure AD y JWT.
 - API Gateway: AWS API Gateway con JWT Authorizer.
-- Base de datos: Oracle Free 23c mediante `ojdbc11`.
+- Base de datos: PostgreSQL 16 mediante el driver oficial JDBC.
 - Despliegue: AWS EC2, Docker y Docker Compose.
 
 ## Ejecución local
@@ -56,7 +56,7 @@ Requisitos: Docker, Docker Compose, Java 21, Node.js 20 y credenciales de Azure 
 ```powershell
 Copy-Item infrastructure\.env.example infrastructure\.env
 docker network create digitalfix-net
-docker compose -f infrastructure\compose.oracle.yml --env-file infrastructure\.env up -d
+docker compose -f infrastructure\compose.postgres.yml --env-file infrastructure\.env up -d
 docker compose -f infrastructure\compose.apps.yml --env-file infrastructure\.env up -d --build
 ```
 
@@ -81,8 +81,8 @@ Las variables mínimas están en [`infrastructure/.env.example`](infrastructure/
 
 - `AZURE_TENANT_ID`
 - `AZURE_API_CLIENT_ID`
-- `ORACLE_USERNAME`
-- `ORACLE_PASSWORD`
+- `POSTGRES_USERNAME`
+- `POSTGRES_PASSWORD`
 
 No se requieren variables de RabbitMQ ni Kafka.
 
@@ -107,5 +107,5 @@ infrastructure/
   -ApiClientId "<API_CLIENT_ID>"
 ```
 
-El script despliega Oracle y las aplicaciones del proyecto. No crea instancias
+El script despliega PostgreSQL y las aplicaciones del proyecto. No crea instancias
 ni abre puertos para RabbitMQ, Kafka o Zookeeper.

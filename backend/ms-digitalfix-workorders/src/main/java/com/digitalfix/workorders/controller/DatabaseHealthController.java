@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Endpoint de diagnóstico de la conexión a Oracle (requiere JWT válido).
+ * Endpoint de diagnóstico de la conexión a PostgreSQL (requiere JWT válido).
  * GET /api/health/database
  */
 @RestController
