@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import ForbiddenPage from './pages/ForbiddenPage';
 import { login, logout } from './services/authService';
+import './styles.css';
 
 export default function App() {
   const isAuthenticated = useIsAuthenticated();
@@ -20,25 +21,53 @@ export default function App() {
   };
 
   return (
-    <div>
-      <nav>
-        <Link to="/workorders">Órdenes de trabajo</Link>
-        {isAuthenticated ? (
-          <button onClick={logout}>Cerrar sesión</button>
-        ) : (
-          <button onClick={handleLogin}>Iniciar sesión</button>
-        )}
-      </nav>
-      {loginError && <p role="alert">Error de autenticación: {loginError}</p>}
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-mark">D</span>
+          <div>
+            <strong>DigitalFix</strong>
+            <small>Gestión técnica</small>
+          </div>
+        </div>
+        <nav className="sidebar-nav" aria-label="Navegación principal">
+          <Link className="nav-link nav-link-active" to="/workorders">
+            <span aria-hidden="true">▦</span>
+            Órdenes de trabajo
+          </Link>
+        </nav>
+        <div className="sidebar-footer">
+          <span className="status-dot" />
+          Servicios operativos
+        </div>
+      </aside>
 
-      <Routes>
-        <Route path="/" element={<Navigate to="/workorders" replace />} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/workorders" element={<WorkOrdersPage />} />
-        </Route>
-        <Route path="/forbidden" element={<ForbiddenPage />} />
-        <Route path="*" element={<Navigate to="/workorders" replace />} />
-      </Routes>
+      <div className="main-shell">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Panel de control</p>
+            <h1>Centro de operaciones</h1>
+          </div>
+          <div className="topbar-actions">
+            {isAuthenticated ? (
+              <button className="button button-outline" onClick={logout}>Cerrar sesión</button>
+            ) : (
+              <button className="button button-primary" onClick={handleLogin}>Iniciar sesión</button>
+            )}
+          </div>
+        </header>
+        <div className="content-area">
+          {loginError && <p className="alert alert-error" role="alert">Error de autenticación: {loginError}</p>}
+          <Routes>
+            <Route path="/" element={<Navigate to="/workorders" replace />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/workorders" element={<WorkOrdersPage />} />
+            </Route>
+            <Route path="/forbidden" element={<ForbiddenPage />} />
+            <Route path="*" element={<Navigate to="/workorders" replace />} />
+          </Routes>
+        </div>
+      </div>
     </div>
   );
 }
