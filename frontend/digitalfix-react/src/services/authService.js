@@ -21,6 +21,18 @@ export function getRoles(account) {
   return Array.isArray(roles) ? roles : [];
 }
 
+export async function getAccessTokenRoles(account) {
+  const tokenAccount = account || msalInstance.getActiveAccount();
+  const token = await getAccessToken(tokenAccount);
+  const claims = decodeJwtPayload(token);
+  const accessTokenRoles = Array.isArray(claims.roles) ? claims.roles : [];
+  const idTokenRoles = Array.isArray(tokenAccount?.idTokenClaims?.roles)
+    ? tokenAccount.idTokenClaims.roles
+    : [];
+
+  return [...new Set([...idTokenRoles, ...accessTokenRoles])];
+}
+
 export function hasRole(role) {
   return getRoles().some((r) => r.toLowerCase() === role.toLowerCase());
 }
@@ -29,11 +41,11 @@ export function hasAnyRole(roles) {
   return roles.some((role) => hasRole(role));
 }
 
-export async function getAccessToken() {
-  const account = msalInstance.getActiveAccount();
-  if (!account) return null;
+export async function getAccessToken(account) {
+  const tokenAccount = account || msalInstance.getActiveAccount();
+  if (!tokenAccount) return null;
   const response = await msalInstance.acquireTokenSilent({
-    account,
+    account: tokenAccount,
     scopes: apiConfig.scopes,
   });
   return response.accessToken;
@@ -49,7 +61,12 @@ export async function getScopes() {
 }
 
 export function login() {
-  return msalInstance.loginPopup(loginRequest);
+  return msalInstance.loginPopup(loginRequest).then((response) => {
+    if (response.account) {
+      msalInstance.setActiveAccount(response.account);
+    }
+    return response;
+  });
 }
 
 export function logout() {

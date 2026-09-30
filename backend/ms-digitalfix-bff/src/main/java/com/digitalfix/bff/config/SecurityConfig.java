@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -21,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
@@ -68,9 +71,27 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder() {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
 
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
+        OAuth2TokenValidator<Jwt> withDefaultClaims = JwtValidators.createDefault();
+        OAuth2TokenValidator<Jwt> withTenantIssuer = jwt -> {
+            String tokenIssuer = jwt.getIssuer() == null ? "" : jwt.getIssuer().toString();
+            String v2Issuer = issuerUri;
+            String v1Issuer = issuerUri
+                    .replace("https://login.microsoftonline.com/", "https://sts.windows.net/")
+                    .replace("/v2.0", "/");
+
+            if (Set.of(v1Issuer, v2Issuer).contains(tokenIssuer)) {
+                return OAuth2TokenValidatorResult.success();
+            }
+
+            OAuth2Error error = new OAuth2Error(
+                    "invalid_token",
+                    "The JWT issuer is not valid for the configured tenant",
+                    null);
+            return OAuth2TokenValidatorResult.failure(error);
+        };
         OAuth2TokenValidator<Jwt> withAudience = new AudienceValidator(audience);
-        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(withIssuer, withAudience);
+        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
+                withDefaultClaims, withTenantIssuer, withAudience);
 
         decoder.setJwtValidator(validator);
         return decoder;

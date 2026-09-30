@@ -27,12 +27,12 @@ en el portal de Azure**, que cada miembro debe hacer con una cuenta con permisos
 1. En **Microsoft Entra ID → App registrations → New registration**.
 2. Nombre: `digitalfix-spa`.
 3. *Supported account types*: **Accounts in this organizational directory only (Single tenant)**.
-4. *Redirect URI* → platform **Single-page application (SPA)** → URI `http://localhost:3000`.
+4. *Redirect URI* → platform **Single-page application (SPA)** → URI `http://localhost:3000/auth-callback.html`.
 5. **Register**.
 6. Copia el **Application (client) ID**.
    - Va en `REACT_APP_AZURE_CLIENT_ID`.
 
-> Si levantas el frontend en otro puerto, agrega ese redirect URI (ej. `http://localhost:3000`).
+> Si levantas el frontend en otro puerto o dominio, agrega también la ruta `/auth-callback.html`.
 
 ---
 
@@ -101,7 +101,7 @@ cp frontend/digitalfix-react/.env.example frontend/digitalfix-react/.env
 ```bash
 REACT_APP_AZURE_CLIENT_ID=<Client ID de digitalfix-spa>
 REACT_APP_AZURE_TENANT_ID=<Tenant ID>
-REACT_APP_AZURE_REDIRECT_URI=http://localhost:3000
+REACT_APP_AZURE_REDIRECT_URI=http://localhost:3000/auth-callback.html
 REACT_APP_API_SCOPE=api://<Client ID de digitalfix-api>/access_as_user
 REACT_APP_API_BASE_URL=http://localhost:8080
 ```
