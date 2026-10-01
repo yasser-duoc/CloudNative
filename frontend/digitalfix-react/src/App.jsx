@@ -23,11 +23,11 @@ export default function App() {
       return;
     }
 
-    getAccessTokenRoles(accounts[0])
+    getAccessTokenRoles(accounts?.[0])
       .then(setRoles)
       .catch((error) => {
         console.error('No fue posible obtener los roles del usuario:', error);
-        setRoles(getRoles(accounts[0]));
+        setRoles(getRoles(accounts?.[0]));
       });
   }, [accounts, isAuthenticated]);
   const [loginError, setLoginError] = useState('');

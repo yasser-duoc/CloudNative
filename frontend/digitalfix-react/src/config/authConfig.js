@@ -1,5 +1,7 @@
 import { LogLevel } from '@azure/msal-browser';
 
+const apiScope = process.env.REACT_APP_API_SCOPE?.trim();
+
 export const msalConfig = {
   auth: {
     clientId: process.env.REACT_APP_AZURE_CLIENT_ID,
@@ -24,10 +26,10 @@ export const msalConfig = {
 };
 
 export const loginRequest = {
-  scopes: [process.env.REACT_APP_API_SCOPE],
+  scopes: apiScope ? [apiScope] : [],
 };
 
 export const apiConfig = {
   baseUrl: process.env.REACT_APP_API_BASE_URL,
-  scopes: [process.env.REACT_APP_API_SCOPE],
+  scopes: apiScope ? [apiScope] : [],
 };

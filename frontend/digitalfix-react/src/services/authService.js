@@ -76,6 +76,21 @@ export async function getScopes() {
 }
 
 export function login() {
+  const missingConfiguration = [
+    ['REACT_APP_AZURE_CLIENT_ID', process.env.REACT_APP_AZURE_CLIENT_ID],
+    ['REACT_APP_AZURE_TENANT_ID', process.env.REACT_APP_AZURE_TENANT_ID],
+    ['REACT_APP_AZURE_REDIRECT_URI', process.env.REACT_APP_AZURE_REDIRECT_URI],
+    ['REACT_APP_API_SCOPE', process.env.REACT_APP_API_SCOPE],
+  ]
+    .filter(([, value]) => !value?.trim())
+    .map(([name]) => name);
+
+  if (missingConfiguration.length > 0) {
+    return Promise.reject(new Error(
+      `Faltan variables de configuración: ${missingConfiguration.join(', ')}. Reconstruye el frontend después de configurar frontend/digitalfix-react/.env.`,
+    ));
+  }
+
   return msalInstance.loginPopup(loginRequest).then((response) => {
     if (response.account) {
       msalInstance.setActiveAccount(response.account);
