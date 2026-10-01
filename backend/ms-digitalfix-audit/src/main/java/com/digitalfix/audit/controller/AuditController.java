@@ -1,6 +1,7 @@
 package com.digitalfix.audit.controller;
 
 import com.digitalfix.audit.domain.AuditEvent;
+import com.digitalfix.audit.domain.WorkOrderEvent;
 import com.digitalfix.audit.service.AuditService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
