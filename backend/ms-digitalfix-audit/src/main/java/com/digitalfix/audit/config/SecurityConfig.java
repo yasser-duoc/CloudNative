@@ -26,6 +26,8 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/audit/internal/events")
+                        .hasAnyRole("Admin", "Supervisor", "Cliente", "Auditor")
                         .requestMatchers("/api/audit/**").hasAnyRole("Auditor", "Admin")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

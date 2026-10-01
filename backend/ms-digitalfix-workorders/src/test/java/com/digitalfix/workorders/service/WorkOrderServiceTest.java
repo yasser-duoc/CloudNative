@@ -1,5 +1,6 @@
 package com.digitalfix.workorders.service;
 
+import com.digitalfix.workorders.audit.AuditEventClient;
 import com.digitalfix.workorders.domain.WorkOrder;
 import com.digitalfix.workorders.domain.WorkOrderStatus;
 import com.digitalfix.workorders.domain.dto.WorkOrderRequest;
@@ -15,12 +16,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class WorkOrderServiceTest {
 
     @Mock
     private WorkOrderRepository repository;
+
+    @Mock
+    private AuditEventClient auditEventClient;
 
     @InjectMocks
     private WorkOrderService service;
@@ -37,14 +42,15 @@ class WorkOrderServiceTest {
         saved.setCustomerName("Cliente Test");
         saved.setServiceId(1L);
         saved.setDescription("Mantención preventiva");
-        saved.setStatus(WorkOrderStatus.PENDING);
+        saved.setStatus(WorkOrderStatus.CREADA);
 
         when(repository.save(any(WorkOrder.class))).thenReturn(saved);
 
         WorkOrderResponse response = service.create(request, "tester@digitalfix.cl");
 
         assertThat(response.getId()).isEqualTo(10L);
-        assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.PENDING);
+        assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.CREADA);
         verify(repository).save(any(WorkOrder.class));
+        verify(auditEventClient).record(any(), eq(null));
     }
 }

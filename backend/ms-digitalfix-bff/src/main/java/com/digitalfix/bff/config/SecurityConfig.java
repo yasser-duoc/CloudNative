@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/workorders/**").hasAnyRole("Admin", "Supervisor", "Cliente")
                         .requestMatchers("/api/catalog/**").hasAnyRole("Admin", "Supervisor")
-                        .requestMatchers("/api/audit/**").hasRole("Auditor")
+                        .requestMatchers("/api/audit/**").hasAnyRole("Auditor", "Admin")
                         .requestMatchers("/api/report/**").hasAnyRole("Admin", "Auditor")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

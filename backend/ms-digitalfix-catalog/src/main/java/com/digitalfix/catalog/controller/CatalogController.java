@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,6 +39,17 @@ public class CatalogController {
         return service.createService(serviceItem);
     }
 
+    @PutMapping("/services/{id}")
+    public ServiceItem updateService(@PathVariable Long id, @Valid @RequestBody ServiceItem item) {
+        return service.updateService(id, item);
+    }
+
+    @DeleteMapping("/services/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteService(@PathVariable Long id) {
+        service.deactivateService(id);
+    }
+
     @GetMapping("/spareparts")
     public List<SparePart> listSpareParts() {
         return service.listSpareParts();
@@ -46,6 +59,17 @@ public class CatalogController {
     @ResponseStatus(HttpStatus.CREATED)
     public SparePart createSparePart(@Valid @RequestBody SparePart sparePart) {
         return service.createSparePart(sparePart);
+    }
+
+    @PutMapping("/spareparts/{id}")
+    public SparePart updateSparePart(@PathVariable Long id, @Valid @RequestBody SparePart item) {
+        return service.updateSparePart(id, item);
+    }
+
+    @DeleteMapping("/spareparts/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSparePart(@PathVariable Long id) {
+        service.deactivateSparePart(id);
     }
 
     @PatchMapping("/spareparts/{id}/stock")

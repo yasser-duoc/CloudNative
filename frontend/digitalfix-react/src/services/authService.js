@@ -18,7 +18,8 @@ function decodeJwtPayload(token) {
 export function getRoles(account) {
   const acc = account || msalInstance.getActiveAccount();
   const roles = acc?.idTokenClaims?.roles;
-  return Array.isArray(roles) ? roles : [];
+  if (Array.isArray(roles)) return roles;
+  return typeof roles === 'string' ? [roles] : [];
 }
 
 export async function getAccessTokenRoles(account) {
@@ -39,6 +40,20 @@ export function hasRole(role) {
 
 export function hasAnyRole(roles) {
   return roles.some((role) => hasRole(role));
+}
+
+export function canAccess(roles, allowedRoles) {
+  if (!allowedRoles || allowedRoles.length === 0) return true;
+  return roles.some((role) => allowedRoles.some((allowedRole) => normalizeRole(role) === normalizeRole(allowedRole)));
+}
+
+function normalizeRole(role) {
+  return String(role)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+del dominio$/, '')
+    .trim();
 }
 
 export async function getAccessToken(account) {

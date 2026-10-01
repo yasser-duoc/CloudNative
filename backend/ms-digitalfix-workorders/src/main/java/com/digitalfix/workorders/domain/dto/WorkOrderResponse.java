@@ -11,6 +11,7 @@ public class WorkOrderResponse {
     private Long serviceId;
     private String description;
     private WorkOrderStatus status;
+    private String assignedTo;
     private String createdBy;
     private Instant createdAt;
 
@@ -52,6 +53,14 @@ public class WorkOrderResponse {
 
     public void setStatus(WorkOrderStatus status) {
         this.status = status;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
     }
 
     public String getCreatedBy() {

@@ -32,3 +32,6 @@ management:
 logging:
   level:
     org.springframework.security: DEBUG
+
+digitalfix:
+  audit-service-url: ${AUDIT_SERVICE_URL:http://localhost:8084}

@@ -16,6 +16,8 @@ public class WorkOrderRequest {
     @Size(max = 2000)
     private String description;
 
+    private String assignedTo;
+
     public String getCustomerName() {
         return customerName;
     }
@@ -38,5 +40,13 @@ public class WorkOrderRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
     }
 }

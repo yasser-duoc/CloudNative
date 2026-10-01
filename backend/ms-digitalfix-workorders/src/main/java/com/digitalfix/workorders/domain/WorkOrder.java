@@ -32,7 +32,10 @@ public class WorkOrder {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 30)
-    private WorkOrderStatus status = WorkOrderStatus.PENDING;
+    private WorkOrderStatus status = WorkOrderStatus.CREADA;
+
+    @Column(name = "ASSIGNED_TO", length = 120)
+    private String assignedTo;
 
     @Column(name = "CREATED_BY", length = 120)
     private String createdBy;
@@ -81,6 +84,14 @@ public class WorkOrder {
 
     public void setStatus(WorkOrderStatus status) {
         this.status = status;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
     }
 
     public String getCreatedBy() {

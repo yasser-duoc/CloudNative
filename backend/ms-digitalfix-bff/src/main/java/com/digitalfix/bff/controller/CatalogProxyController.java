@@ -8,6 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -75,6 +77,34 @@ public class CatalogProxyController {
                 .body(payload)
                 .retrieve()
                 .toEntity(String.class);
+    }
+
+    @PutMapping("/services/{id}")
+    public ResponseEntity<String> updateService(@PathVariable Long id, @RequestBody String payload,
+                                                @AuthenticationPrincipal Jwt jwt) {
+        return catalogClient.put().uri("/api/catalog/services/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).contentType(MediaType.APPLICATION_JSON)
+                .body(payload).retrieve().toEntity(String.class);
+    }
+
+    @DeleteMapping("/services/{id}")
+    public ResponseEntity<String> deleteService(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return catalogClient.delete().uri("/api/catalog/services/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).retrieve().toEntity(String.class);
+    }
+
+    @PutMapping("/spareparts/{id}")
+    public ResponseEntity<String> updateSparePart(@PathVariable Long id, @RequestBody String payload,
+                                                  @AuthenticationPrincipal Jwt jwt) {
+        return catalogClient.put().uri("/api/catalog/spareparts/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).contentType(MediaType.APPLICATION_JSON)
+                .body(payload).retrieve().toEntity(String.class);
+    }
+
+    @DeleteMapping("/spareparts/{id}")
+    public ResponseEntity<String> deleteSparePart(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return catalogClient.delete().uri("/api/catalog/spareparts/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).retrieve().toEntity(String.class);
     }
 
     private String bearer(Jwt jwt) {
