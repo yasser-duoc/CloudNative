@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import httpClient from '../services/httpClient';
+import { formatStatus } from '../utils/formatters';
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState([]);
@@ -35,4 +36,4 @@ export default function DashboardPage() {
 }
 
 function Metric({ label, value }) { return <div className="metric-card"><span>{label}</span><strong>{value}</strong></div>; }
-export function Status({ value }) { return <span className={`status status-${String(value || '').toLowerCase()}`}>{String(value || '—').replaceAll('_', ' ')}</span>; }
+export function Status({ value }) { return <span className={`status status-${String(value || '').toLowerCase()}`}>{formatStatus(value)}</span>; }

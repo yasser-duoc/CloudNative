@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
 import httpClient from '../services/httpClient';
 import { Status } from './DashboardPage';
+import { formatStatus } from '../utils/formatters';
 
 const statuses = ['', 'CREADA', 'ASIGNADA', 'EN_DESPLAZAMIENTO', 'EN_EJECUCIÓN', 'CERRADA', 'CANCELADA'];
+const transitions = {
+  CREADA: ['ASIGNADA', 'CANCELADA'],
+  PENDING: ['ASIGNADA', 'CANCELADA'],
+  ASIGNADA: ['EN_DESPLAZAMIENTO', 'EN_EJECUCIÓN', 'CANCELADA'],
+  EN_DESPLAZAMIENTO: ['EN_EJECUCIÓN', 'CANCELADA'],
+  EN_EJECUCIÓN: ['CERRADA', 'CANCELADA'],
+  CERRADA: [],
+  CANCELADA: [],
+};
 
 export default function WorkOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -30,16 +40,17 @@ export default function WorkOrdersPage() {
       .then(() => { setForm({ customerName: '', serviceId: '', description: '' }); load(); })
       .catch(() => setError('No fue posible crear la orden.'));
   };
-  const changeStatus = (order) => {
-    const next = window.prompt(`Nuevo estado para la orden #${order.id}`, order.status);
-    if (!next || !statuses.includes(next)) return;
-    httpClient.put(`/api/workorders/${order.id}/status`, { status: next }).then(load).catch(() => setError('La transición de estado no es válida.'));
+  const changeStatus = (order, next) => {
+    if (!next) return;
+    httpClient.put(`/api/workorders/${order.id}/status`, { status: next })
+      .then(load)
+      .catch(() => setError('La transición de estado no es válida.'));
   };
   return <main className="page">
     <section className="page-heading"><div><p className="eyebrow">Operaciones / Seguimiento</p><h2>Órdenes de trabajo</h2><p className="page-description">Crea, consulta y actualiza solicitudes técnicas.</p></div><div className="summary-card"><span className="summary-label">Total filtradas</span><strong>{orders.length}</strong></div></section>
     {error && <p className="alert alert-error">{error}</p>}
     <section className="orders-card create-card"><div className="card-header"><div><h3>Nueva orden</h3><p>Registra una solicitud de mantención.</p></div></div><form className="form-grid form-grid-wide" onSubmit={create}><input required placeholder="Cliente" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} /><select required value={form.serviceId} onChange={(e) => setForm({ ...form, serviceId: e.target.value })}><option value="">Selecciona un servicio</option>{services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</select><textarea placeholder="Descripción del problema" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /><button className="button button-primary" type="submit">Crear orden</button></form></section>
-    <section className="filter-bar"><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>{statuses.map((status) => <option key={status} value={status}>{status || 'Todos los estados'}</option>)}</select><input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} /><input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} /><button className="button button-primary" onClick={load}>Aplicar filtros</button><button className="button button-outline" onClick={() => { setFilters({ status: '', from: '', to: '' }); setTimeout(load, 0); }}>Limpiar</button></section>
-    <section className="orders-card"><div className="card-header"><div><h3>Listado de órdenes</h3><p>Actualizado desde DigitalFix.</p></div><span className="live-badge"><span className="status-dot" /> En línea</span></div>{loading ? <div className="empty-state"><span className="spinner" />Cargando órdenes...</div> : orders.length === 0 ? <div className="empty-state">No hay órdenes para los filtros seleccionados.</div> : <div className="table-wrapper"><table><thead><tr><th>ID</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>Creada por</th><th /></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td className="order-id">#{order.id}</td><td>{order.customerName}</td><td>{services.find((service) => service.id === order.serviceId)?.name || `Servicio #${order.serviceId}`}</td><td><Status value={order.status} /></td><td>{order.createdBy || '—'}</td><td><button className="button button-outline" onClick={() => changeStatus(order)}>Cambiar estado</button></td></tr>)}</tbody></table></div>}</section>
+    <section className="filter-bar"><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>{statuses.map((status) => <option key={status} value={status}>{status ? formatStatus(status) : 'Todos los estados'}</option>)}</select><input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} /><input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} /><button className="button button-primary" onClick={load}>Aplicar filtros</button><button className="button button-outline" onClick={() => { setFilters({ status: '', from: '', to: '' }); setTimeout(load, 0); }}>Limpiar</button></section>
+    <section className="orders-card"><div className="card-header"><div><h3>Listado de órdenes</h3><p>Actualizado desde DigitalFix.</p></div><span className="live-badge"><span className="status-dot" /> En línea</span></div>{loading ? <div className="empty-state"><span className="spinner" />Cargando órdenes...</div> : orders.length === 0 ? <div className="empty-state">No hay órdenes para los filtros seleccionados.</div> : <div className="table-wrapper"><table><thead><tr><th>ID</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>Creada por</th><th>Actualizar</th></tr></thead><tbody>{orders.map((order) => { const nextStatuses = transitions[order.status] || []; return <tr key={order.id}><td className="order-id">#{order.id}</td><td>{order.customerName}</td><td>{services.find((service) => service.id === order.serviceId)?.name || `Servicio #${order.serviceId}`}</td><td><Status value={order.status} /></td><td>{order.createdBy || '—'}</td><td>{nextStatuses.length === 0 ? <span className="muted-text">Sin cambios</span> : <select className="status-select" value="" onChange={(event) => changeStatus(order, event.target.value)}><option value="">Cambiar estado</option>{nextStatuses.map((status) => <option key={status} value={status}>{formatStatus(status)}</option>)}</select>}</td></tr>; })}</tbody></table></div>}</section>
   </main>;
 }

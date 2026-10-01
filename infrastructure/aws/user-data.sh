@@ -16,9 +16,15 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 apt-get update -y
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Swap de respaldo (4GB) para absorber picos de memoria del stack
-fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
-echo '/swapfile none swap sw 0 0' >> /etc/fstab
+# Swap de respaldo para absorber picos de memoria durante la compilación.
+# Los límites de Docker y de la JVM controlan el consumo normal de RAM.
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
 
 cd /opt
 rm -rf CloudNative
@@ -34,7 +40,13 @@ EOF
 
 docker network create digitalfix-net || true
 docker compose -f infrastructure/compose.postgres.yml --env-file infrastructure/.env up -d
-sleep 30
-docker compose -f infrastructure/compose.apps.yml      --env-file infrastructure/.env up -d --build
+until docker inspect --format='{{.State.Health.Status}}' digitalfix-postgres 2>/dev/null | grep -q healthy; do
+  sleep 5
+done
+
+# Construir un servicio a la vez evita que Maven consuma toda la RAM disponible.
+export COMPOSE_PARALLEL_LIMIT=1
+docker compose -f infrastructure/compose.apps.yml --env-file infrastructure/.env build
+docker compose -f infrastructure/compose.apps.yml --env-file infrastructure/.env up -d
 
 echo "DigitalFix stack desplegado" > /var/log/digitalfix-deploy.done

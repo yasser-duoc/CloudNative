@@ -11,7 +11,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$TenantId,
     [Parameter(Mandatory = $true)][string]$ApiClientId,
-    [string]$InstanceType = "t3.xlarge",
+    [string]$InstanceType = "t3.medium",
     [string]$Region = "us-east-1"
 )
 

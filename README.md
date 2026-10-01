@@ -116,5 +116,18 @@ infrastructure/
   -ApiClientId "<API_CLIENT_ID>"
 ```
 
-El script despliega PostgreSQL y las aplicaciones del proyecto. No crea instancias
+El script usa `t3.medium` por defecto y despliega PostgreSQL y las aplicaciones
+del proyecto. Los servicios tienen límites de memoria Docker y las JVM usan heaps
+acotados para evitar que una instancia pequeña se quede sin RAM. La suma de los
+límites de los contenedores es aproximadamente 2.1 GB; se configura además un
+swap de 2 GB como respaldo para la compilación inicial. No crea instancias
 ni abre puertos para RabbitMQ, Kafka o Zookeeper.
+
+La construcción de imágenes se ejecuta de forma secuencial en EC2 para evitar que
+varios procesos Maven consuman la memoria simultáneamente. Para revisar el uso
+después del despliegue:
+
+```bash
+free -h
+docker stats --no-stream
+```

@@ -4,6 +4,8 @@ services:
       context: ../frontend/digitalfix-react
     ports:
       - "3000:80"
+    mem_limit: 96m
+    mem_reservation: 32m
     depends_on:
       - ms-digitalfix-bff
     restart: unless-stopped
@@ -14,6 +16,7 @@ services:
     build:
       context: ../backend/ms-digitalfix-bff
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       WORKORDERS_SERVICE_URL: http://ms-digitalfix-workorders:8081
@@ -23,6 +26,8 @@ services:
       REPORT_SERVICE_URL: http://ms-digitalfix-report:8085
     ports:
       - "8080:8080"
+    mem_limit: 320m
+    mem_reservation: 192m
     restart: unless-stopped
     networks:
       - digitalfix-net
@@ -31,13 +36,17 @@ services:
     build:
       context: ../backend/ms-digitalfix-workorders
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      AUDIT_SERVICE_URL: http://ms-digitalfix-audit:8084
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/workorders_db
       POSTGRES_USER: ${POSTGRES_USER:-digitalfix}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
     ports:
       - "8081:8081"
+    mem_limit: 320m
+    mem_reservation: 192m
     restart: unless-stopped
     networks:
       - digitalfix-net
@@ -46,6 +55,7 @@ services:
     build:
       context: ../backend/ms-digitalfix-catalog
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/catalog_db
@@ -53,6 +63,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
     ports:
       - "8082:8082"
+    mem_limit: 320m
+    mem_reservation: 192m
     restart: unless-stopped
     networks:
       - digitalfix-net
@@ -60,8 +72,12 @@ services:
   ms-digitalfix-notify:
     build:
       context: ../backend/ms-digitalfix-notify
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
     ports:
       - "8083:8083"
+    mem_limit: 160m
+    mem_reservation: 96m
     restart: unless-stopped
     networks:
       - digitalfix-net
@@ -70,6 +86,7 @@ services:
     build:
       context: ../backend/ms-digitalfix-audit
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/audit_db
@@ -77,6 +94,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
     ports:
       - "8084:8084"
+    mem_limit: 256m
+    mem_reservation: 160m
     restart: unless-stopped
     networks:
       - digitalfix-net
@@ -85,6 +104,7 @@ services:
     build:
       context: ../backend/ms-digitalfix-report
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/report_db
@@ -92,6 +112,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
     ports:
       - "8085:8085"
+    mem_limit: 256m
+    mem_reservation: 160m
     restart: unless-stopped
     networks:
       - digitalfix-net
