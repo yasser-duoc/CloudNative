@@ -28,7 +28,7 @@ cd CloudNative
 cat > infrastructure/.env <<EOF
 AZURE_TENANT_ID=${AZURE_TENANT_ID}
 AZURE_API_CLIENT_ID=${AZURE_API_CLIENT_ID}
-POSTGRES_USERNAME=digitalfix
+POSTGRES_USER=digitalfix
 POSTGRES_PASSWORD=DigitalFix2026!
 EOF
 

@@ -81,8 +81,17 @@ Las variables mínimas están en [`infrastructure/.env.example`](infrastructure/
 
 - `AZURE_TENANT_ID`
 - `AZURE_API_CLIENT_ID`
-- `POSTGRES_USERNAME`
+- `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
+
+La primera inicialización de PostgreSQL crea `workorders_db`, `catalog_db`,
+`audit_db` y `report_db` mediante `infrastructure/init-dbs.sh`. Si ya existe un
+volumen PostgreSQL creado con una configuración anterior, elimínalo solo en
+entornos locales para ejecutar nuevamente la inicialización:
+
+```powershell
+docker compose -f infrastructure\compose.postgres.yml down -v
+```
 
 No se requieren variables de RabbitMQ ni Kafka.
 
