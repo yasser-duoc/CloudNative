@@ -43,6 +43,10 @@ services:
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/workorders_db
       POSTGRES_USER: ${POSTGRES_USER:-digitalfix}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
+      SPRING_RABBITMQ_HOST: rabbitmq-1
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
     ports:
       - "8081:8081"
     mem_limit: 320m
@@ -74,6 +78,10 @@ services:
       context: ../backend/ms-digitalfix-notify
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
+      SPRING_RABBITMQ_HOST: rabbitmq-1
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
     ports:
       - "8083:8083"
     mem_limit: 160m

@@ -36,9 +36,14 @@ AZURE_TENANT_ID=${AZURE_TENANT_ID}
 AZURE_API_CLIENT_ID=${AZURE_API_CLIENT_ID}
 POSTGRES_USER=digitalfix
 POSTGRES_PASSWORD=DigitalFix2026!
+RABBITMQ_USER=digitalfix
+RABBITMQ_PASSWORD=DigitalFix2026!
+RABBITMQ_ERLANG_COOKIE=digitalfix-cookie
 EOF
 
 docker network create digitalfix-net || true
+docker compose -f infrastructure/compose.rabbitmq.yml --env-file infrastructure/.env up -d
+sleep 20
 docker compose -f infrastructure/compose.postgres.yml --env-file infrastructure/.env up -d
 until docker inspect --format='{{.State.Health.Status}}' digitalfix-postgres 2>/dev/null | grep -q healthy; do
   sleep 5
