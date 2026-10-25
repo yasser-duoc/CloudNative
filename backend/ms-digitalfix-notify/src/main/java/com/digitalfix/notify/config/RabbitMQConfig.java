@@ -22,14 +22,17 @@ public class RabbitMQConfig {
     public static final String CREATED_QUEUE = "workorder.created.queue";
     public static final String STATUS_QUEUE = "workorder.status.queue";
     public static final String COMPLETED_QUEUE = "workorder.completed.queue";
+    public static final String TICKET_QUEUE = "workorder.ticket.queue";
 
     public static final String CREATED_DLQ = "workorder.created.queue.dlq";
     public static final String STATUS_DLQ = "workorder.status.queue.dlq";
     public static final String COMPLETED_DLQ = "workorder.completed.queue.dlq";
+    public static final String TICKET_DLQ = "workorder.ticket.queue.dlq";
 
     public static final String CREATED_ROUTING_KEY = "workorder.created";
     public static final String STATUS_ROUTING_KEY = "workorder.status.#";
     public static final String COMPLETED_ROUTING_KEY = "workorder.completed";
+    public static final String TICKET_ROUTING_KEY = "workorder.created";
 
     @Bean
     public TopicExchange workOrderExchange() {
@@ -66,6 +69,14 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue ticketQueue() {
+        return QueueBuilder.durable(TICKET_QUEUE)
+                .deadLetterExchange(DLX)
+                .deadLetterRoutingKey(TICKET_DLQ)
+                .build();
+    }
+
+    @Bean
     public Queue createdDlq() {
         return QueueBuilder.durable(CREATED_DLQ).build();
     }
@@ -78,6 +89,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue completedDlq() {
         return QueueBuilder.durable(COMPLETED_DLQ).build();
+    }
+
+    @Bean
+    public Queue ticketDlq() {
+        return QueueBuilder.durable(TICKET_DLQ).build();
     }
 
     @Bean
@@ -96,6 +112,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding ticketBinding(Queue ticketQueue, TopicExchange workOrderExchange) {
+        return BindingBuilder.bind(ticketQueue).to(workOrderExchange).with(TICKET_ROUTING_KEY);
+    }
+
+    @Bean
     public Binding createdDlqBinding(Queue createdDlq, TopicExchange workOrderDlx) {
         return BindingBuilder.bind(createdDlq).to(workOrderDlx).with(CREATED_DLQ);
     }
@@ -108,6 +129,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding completedDlqBinding(Queue completedDlq, TopicExchange workOrderDlx) {
         return BindingBuilder.bind(completedDlq).to(workOrderDlx).with(COMPLETED_DLQ);
+    }
+
+    @Bean
+    public Binding ticketDlqBinding(Queue ticketDlq, TopicExchange workOrderDlx) {
+        return BindingBuilder.bind(ticketDlq).to(workOrderDlx).with(TICKET_DLQ);
     }
 
     @Bean
