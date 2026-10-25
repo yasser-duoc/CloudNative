@@ -5,6 +5,8 @@ import com.digitalfix.workorders.domain.WorkOrder;
 import com.digitalfix.workorders.domain.WorkOrderStatus;
 import com.digitalfix.workorders.domain.dto.WorkOrderRequest;
 import com.digitalfix.workorders.domain.dto.WorkOrderResponse;
+import com.digitalfix.workorders.event.WorkOrderEvent;
+import com.digitalfix.workorders.publisher.WorkOrderEventPublisher;
 import com.digitalfix.workorders.repository.WorkOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,9 @@ class WorkOrderServiceTest {
 
     @Mock
     private AuditEventClient auditEventClient;
+
+    @Mock
+    private WorkOrderEventPublisher eventPublisher;
 
     @InjectMocks
     private WorkOrderService service;
@@ -52,5 +57,6 @@ class WorkOrderServiceTest {
         assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.CREADA);
         verify(repository).save(any(WorkOrder.class));
         verify(auditEventClient).record(any(), eq(null));
+        verify(eventPublisher).publish(any(WorkOrderEvent.class));
     }
 }

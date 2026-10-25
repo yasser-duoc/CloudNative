@@ -6,6 +6,8 @@ import com.digitalfix.workorders.domain.WorkOrder;
 import com.digitalfix.workorders.domain.WorkOrderStatus;
 import com.digitalfix.workorders.domain.dto.WorkOrderRequest;
 import com.digitalfix.workorders.domain.dto.WorkOrderResponse;
+import com.digitalfix.workorders.event.WorkOrderEvent;
+import com.digitalfix.workorders.publisher.WorkOrderEventPublisher;
 import com.digitalfix.workorders.repository.WorkOrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -21,10 +24,13 @@ public class WorkOrderService {
 
     private final WorkOrderRepository repository;
     private final AuditEventClient auditEventClient;
+    private final WorkOrderEventPublisher eventPublisher;
 
-    public WorkOrderService(WorkOrderRepository repository, AuditEventClient auditEventClient) {
+    public WorkOrderService(WorkOrderRepository repository, AuditEventClient auditEventClient,
+                            WorkOrderEventPublisher eventPublisher) {
         this.repository = repository;
         this.auditEventClient = auditEventClient;
+        this.eventPublisher = eventPublisher;
     }
 
     public WorkOrderResponse create(WorkOrderRequest request, String createdBy) {
@@ -42,6 +48,7 @@ public class WorkOrderService {
 
         WorkOrder saved = repository.save(order);
         recordAudit("WORK_ORDER_CREATED", saved, createdBy, bearerToken);
+        publishEvent(WorkOrderEvent.TYPE_CREATED, saved, createdBy);
 
         return toResponse(saved);
     }
@@ -90,8 +97,23 @@ public class WorkOrderService {
         order.setUpdatedAt(Instant.now());
         WorkOrder saved = repository.save(order);
         recordAudit("WORK_ORDER_STATUS_CHANGED", saved, actor, bearerToken);
+        publishEvent(nextStatus == WorkOrderStatus.CERRADA
+                ? WorkOrderEvent.TYPE_COMPLETED
+                : WorkOrderEvent.TYPE_STATUS_CHANGED, saved, actor);
 
         return toResponse(saved);
+    }
+
+    private void publishEvent(String eventType, WorkOrder order, String actor) {
+        eventPublisher.publish(new WorkOrderEvent(
+                UUID.randomUUID().toString(),
+                eventType,
+                order.getId(),
+                order.getStatus() == null ? null : order.getStatus().name(),
+                order.getCustomerName(),
+                null,
+                actor,
+                Instant.now()));
     }
 
     private void recordAudit(String type, WorkOrder order, String actor, String bearerToken) {
