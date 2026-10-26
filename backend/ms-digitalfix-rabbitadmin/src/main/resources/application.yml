@@ -1,0 +1,22 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: ms-digitalfix-rabbitadmin
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:digitalfix}
+    password: ${RABBITMQ_PASSWORD:digitalfix}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
