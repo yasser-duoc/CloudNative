@@ -15,18 +15,25 @@ AWS API Gateway
       ▼
 Spring Boot BFF
       │
-      ├── ms-digitalfix-workorders
-      ├── ms-digitalfix-catalog
-      ├── ms-digitalfix-audit
-      └── ms-digitalfix-report
-               │
-               ▼
-           PostgreSQL
+      ├── ms-digitalfix-workorders ──┐  eventos (RabbitMQ)
+      ├── ms-digitalfix-catalog     │
+      ├── ms-digitalfix-audit       ▼
+      └── ms-digitalfix-report   TopicExchange: digitalfix.workorder.exchange
+                                   ├── workorder.created.queue ──► notificaciones
+                                   ├── workorder.status.queue  ──► notificaciones
+                                   ├── workorder.completed.queue ► notificaciones
+                                   └── workorder.ticket.queue   ──► generación de tickets
+                                          (cada cola con su DLQ en digitalfix.workorder.dlx)
+                │
+                ▼
+            PostgreSQL
 ```
 
-RabbitMQ y Kafka no forman parte de esta etapa. Las notificaciones, auditoría
-basada en eventos y reportería por streaming quedan preparadas como módulos
-independientes para una incorporación posterior.
+La mensajería asíncrona con RabbitMQ desacopla las tareas de notificaciones y
+generación de tickets de la lógica de órdenes: el productor publica eventos y los
+consumidores procesan de forma independiente. Si un procesamiento falla tras los
+reintentos, el mensaje se enruta a su DLQ sin afectar la operación principal.
+Kafka queda preparado como módulo independiente para una incorporación posterior.
 
 ## Servicios
 
@@ -36,7 +43,7 @@ independientes para una incorporación posterior.
 | `ms-digitalfix-bff` | 8080 | — | BFF, seguridad JWT y proxy |
 | `ms-digitalfix-workorders` | 8081 | PostgreSQL | CRUD de órdenes |
 | `ms-digitalfix-catalog` | 8082 | PostgreSQL | Servicios, repuestos y stock |
-| `ms-digitalfix-notify` | 8083 | — | Módulo de notificaciones, sin broker por ahora |
+| `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ: notificaciones y generación de tickets |
 | `ms-digitalfix-audit` | 8084 | PostgreSQL | Consulta de auditoría |
 | `ms-digitalfix-report` | 8085 | PostgreSQL | Consulta de reportes y KPIs |
 
@@ -47,7 +54,48 @@ independientes para una incorporación posterior.
 - Seguridad: OAuth 2.0 / OpenID Connect, Azure AD y JWT.
 - API Gateway: AWS API Gateway con JWT Authorizer.
 - Base de datos: PostgreSQL 16 mediante el driver oficial JDBC.
+- Mensajería: RabbitMQ 3.13 (clúster de 2 nodos) con Spring AMQP.
 - Despliegue: AWS EC2, Docker y Docker Compose.
+
+## Mensajería asíncrona (RabbitMQ)
+
+Productor: `ms-digitalfix-workorders` publica un `WorkOrderEvent` al topic exchange
+`digitalfix.workorder.exchange` al crear una orden y al cambiar su estado (si la
+orden pasa a `CERRADA` se publica `WORK_ORDER_CLOSED`). Consumidor:
+`ms-digitalfix-notify` procesa las tareas asíncronas.
+
+| Exchange (topic) | Routing key | Cola principal | Tarea asíncrona | DLQ |
+|---|---|---|---|---|
+| `digitalfix.workorder.exchange` | `workorder.created` | `workorder.created.queue` | Notificación email + push | `workorder.created.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.status.#` | `workorder.status.queue` | Notificación email + push | `workorder.status.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.completed` | `workorder.completed.queue` | Notificación email | `workorder.completed.queue.dlq` |
+| `digitalfix.workorder.exchange` | `workorder.created` | `workorder.ticket.queue` | Generación de ticket | `workorder.ticket.queue.dlq` |
+
+- Las 4 colas declaran `x-dead-letter-exchange = digitalfix.workorder.dlx` con su
+  propio `x-dead-letter-routing-key`, y las DLQs se enlazan al DLX.
+- La cola de tickets se enlaza a `workorder.created` (topic exchange): un mismo
+  evento de creación alimenta notificaciones **y** generación de tickets sin tocar
+  el productor.
+- El consumidor usa `default-requeue-rejected=false` + reintentos (`max-attempts: 3`):
+  si la tarea falla definitivamente, el mensaje queda en la DLQ.
+- La publicación es *best-effort* (try/catch en `WorkOrderEventPublisher`): un fallo
+  del broker nunca revierte ni afecta la lógica de órdenes.
+- Topología completa en `ms-digitalfix-notify/src/main/java/com/digitalfix/notify/config/RabbitMQConfig.java`.
+
+### Demo de la mensajería
+
+1. Levantar RabbitMQ y observar la topología en la UI (`digitalfix` / `digitalfix`):
+
+```powershell
+docker network create digitalfix-net
+docker compose -f infrastructure\compose.rabbitmq.yml --env-file infrastructure\.env up -d
+```
+
+2. Con el stack arriba, crear una orden desde el frontend (o `POST /api/workorders` vía BFF).
+3. Ver los mensajes procesados en los logs de `ms-digitalfix-notify`
+   (`docker logs -f <contenedor-notify>`): `[EMAIL]`, `[PUSH]` y `[TICKET]`.
+4. En la UI de RabbitMQ (http://localhost:15672) verificar las 4 colas y sus DLQs
+   (mensajes muertos visibles si se fuerza un error).
 
 ## Ejecución local
 
@@ -57,6 +105,7 @@ Requisitos: Docker, Docker Compose, Java 21, Node.js 20 y credenciales de Azure 
 Copy-Item infrastructure\.env.example infrastructure\.env
 docker network create digitalfix-net
 docker compose -f infrastructure\compose.postgres.yml --env-file infrastructure\.env up -d
+docker compose -f infrastructure\compose.rabbitmq.yml --env-file infrastructure\.env up -d
 docker compose -f infrastructure\compose.apps.yml --env-file infrastructure\.env up -d --build
 ```
 
@@ -83,6 +132,9 @@ Las variables mínimas están en [`infrastructure/.env.example`](infrastructure/
 - `AZURE_API_CLIENT_ID`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
+- `RABBITMQ_USER`
+- `RABBITMQ_PASSWORD`
+- `RABBITMQ_ERLANG_COOKIE`
 
 La primera inicialización de PostgreSQL crea `workorders_db`, `catalog_db`,
 `audit_db` y `report_db` mediante `infrastructure/init-dbs.sh`. Si ya existe un
@@ -93,7 +145,7 @@ entornos locales para ejecutar nuevamente la inicialización:
 docker compose -f infrastructure\compose.postgres.yml down -v
 ```
 
-No se requieren variables de RabbitMQ ni Kafka.
+Las variables de RabbitMQ se listan más arriba. Kafka no se utiliza en esta etapa.
 
 ## Estructura
 
@@ -116,12 +168,13 @@ infrastructure/
   -ApiClientId "<API_CLIENT_ID>"
 ```
 
-El script usa `t3.medium` por defecto y despliega PostgreSQL y las aplicaciones
-del proyecto. Los servicios tienen límites de memoria Docker y las JVM usan heaps
-acotados para evitar que una instancia pequeña se quede sin RAM. La suma de los
-límites de los contenedores es aproximadamente 2.1 GB; se configura además un
-swap de 2 GB como respaldo para la compilación inicial. No crea instancias
-ni abre puertos para RabbitMQ, Kafka o Zookeeper.
+El script usa `t3.medium` por defecto y despliega PostgreSQL, el clúster de
+RabbitMQ (2 nodos) y las aplicaciones del proyecto. Los servicios tienen límites
+de memoria Docker y las JVM usan heaps acotados para evitar que una instancia
+pequeña se quede sin RAM. La suma de los límites de los contenedores de las
+aplicaciones es aproximadamente 2.1 GB, más 512 MB para los dos nodos RabbitMQ;
+se configura además un swap de 2 GB como respaldo para la compilación inicial.
+La UI de RabbitMQ queda expuesta en el puerto 15672.
 
 La construcción de imágenes se ejecuta de forma secuencial en EC2 para evitar que
 varios procesos Maven consuman la memoria simultáneamente. Para revisar el uso

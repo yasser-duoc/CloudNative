@@ -9,6 +9,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    mem_limit: 256m
+    mem_reservation: 128m
     volumes:
       - rabbitmq1-data:/var/lib/rabbitmq
     restart: unless-stopped
@@ -25,6 +27,8 @@ services:
     ports:
       - "5673:5672"
       - "15673:15672"
+    mem_limit: 256m
+    mem_reservation: 128m
     volumes:
       - rabbitmq2-data:/var/lib/rabbitmq
     depends_on:
