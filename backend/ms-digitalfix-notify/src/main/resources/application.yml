@@ -11,6 +11,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:digitalfix}
     listener:
       simple:
+        acknowledge-mode: manual
         default-requeue-rejected: false
         retry:
           enabled: true
