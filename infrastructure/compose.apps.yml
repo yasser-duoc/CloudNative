@@ -90,6 +90,25 @@ services:
     networks:
       - digitalfix-net
 
+  ms-digitalfix-rabbitadmin:
+    build:
+      context: ../backend/ms-digitalfix-rabbitadmin
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      SPRING_RABBITMQ_HOST: rabbitmq-1
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
+    ports:
+      - "8086:8086"
+    mem_limit: 320m
+    mem_reservation: 192m
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
   ms-digitalfix-audit:
     build:
       context: ../backend/ms-digitalfix-audit

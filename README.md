@@ -44,6 +44,7 @@ Kafka queda preparado como módulo independiente para una incorporación posteri
 | `ms-digitalfix-workorders` | 8081 | PostgreSQL | CRUD de órdenes |
 | `ms-digitalfix-catalog` | 8082 | PostgreSQL | Servicios, repuestos y stock |
 | `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ: notificaciones y generación de tickets |
+| `ms-digitalfix-rabbitadmin` | 8086 | — | Administrador RabbitMQ: colas, exchanges y bindings vía REST |
 | `ms-digitalfix-audit` | 8084 | PostgreSQL | Consulta de auditoría |
 | `ms-digitalfix-report` | 8085 | PostgreSQL | Consulta de reportes y KPIs |
 
@@ -96,6 +97,39 @@ docker compose -f infrastructure\compose.rabbitmq.yml --env-file infrastructure\
    (`docker logs -f <contenedor-notify>`): `[EMAIL]`, `[PUSH]` y `[TICKET]`.
 4. En la UI de RabbitMQ (http://localhost:15672) verificar las 4 colas y sus DLQs
    (mensajes muertos visibles si se fuerza un error).
+
+### Política de confirmación de mensajes (ACK/NACK)
+
+Los consumidores operan en `acknowledge-mode: manual` con una política explícita y
+documentada en cada listener:
+
+- Éxito → `channel.basicAck(tag, false)`.
+- Error transitorio (`RecoverableMessagingException`, p. ej. email del cliente aún
+  no disponible) → se relanza: el contenedor reintenta 3 veces con backoff y, si
+  persiste, hace NACK sin requeue → el mensaje va a la DLQ.
+- Mensaje inválido (`InvalidMessageException`, p. ej. evento sin `eventId`) →
+  `channel.basicNack(tag, false, false)` directo a la DLQ, sin reintentos.
+- Todos los caminos quedan registrados en logs (`INFO`/`WARN`/`ERROR`).
+
+### Administración de RabbitMQ (ms-digitalfix-rabbitadmin)
+
+Microservicio con la lógica encapsulada en `RabbitAdminService` (los controladores no
+conocen detalles del broker) y endpoints REST con validación de parámetros
+(nombres obligatorios y con formato válido, tipos de exchange y bindings restringidos,
+nombres reservados `amq.*`/`default` rechazados). Protegido con JWT y rol `Admin`:
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/rabbit/queues` | Crea una cola (opcional `deadLetterExchange`/`deadLetterRoutingKey`); 409 si ya existe |
+| GET | `/api/rabbit/queues/{name}` | Información de la cola (mensajes/consumidores); 404 si no existe |
+| DELETE | `/api/rabbit/queues/{name}` | Elimina la cola; 404 si no existe |
+| POST | `/api/rabbit/exchanges` | Crea un exchange (`direct`, `topic`, `fanout`, `headers`) |
+| DELETE | `/api/rabbit/exchanges/{name}` | Elimina el exchange |
+| POST | `/api/rabbit/bindings` | Crea un binding (exchange → cola o exchange, con routing key) |
+| DELETE | `/api/rabbit/bindings?exchange=&destination=&destinationType=&routingKey=` | Elimina el binding |
+
+Errores claros con códigos HTTP: `400` (validación), `404` (recurso inexistente),
+`409` (conflicto).
 
 ## Ejecución local
 

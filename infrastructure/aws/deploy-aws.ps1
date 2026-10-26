@@ -30,7 +30,7 @@ if (-not (Test-Path "$PSScriptRoot\digitalfix-key.pem")) {
 $sgId = aws ec2 describe-security-groups --region $Region --group-names $Sg --query "SecurityGroups[0].GroupId" --output text 2>$null
 if (-not $sgId) {
     $sgId = aws ec2 create-security-group --region $Region --group-name $Sg --description "DigitalFix demo" --query "GroupId" --output text
-    foreach ($port in @(22, 3000, 8080, 8081, 8082, 8083, 8084, 8085)) {
+    foreach ($port in @(22, 3000, 8080, 8081, 8082, 8083, 8084, 8085, 8086, 15672)) {
         aws ec2 authorize-security-group-ingress --region $Region --group-id $sgId --protocol tcp --port $port --cidr 0.0.0.0/0 | Out-Null
     }
 }
