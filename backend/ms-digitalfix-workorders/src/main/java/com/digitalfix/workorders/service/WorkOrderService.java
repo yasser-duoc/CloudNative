@@ -87,8 +87,11 @@ public class WorkOrderService {
         }
         if (nextStatus == WorkOrderStatus.EN_EJECUCIÓN
                 && (order.getAssignedTo() == null || order.getAssignedTo().isBlank())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "A work order must be assigned before execution");
+            if (actor == null || actor.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A work order must be assigned before execution");
+            }
+            order.setAssignedTo(actor);
         }
         if (nextStatus == WorkOrderStatus.ASIGNADA && (order.getAssignedTo() == null || order.getAssignedTo().isBlank())) {
             order.setAssignedTo(actor);

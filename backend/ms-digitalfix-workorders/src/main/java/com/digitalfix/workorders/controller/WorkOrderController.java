@@ -37,7 +37,7 @@ public class WorkOrderController {
     public WorkOrderResponse create(@Valid @RequestBody WorkOrderRequest request,
                                     @AuthenticationPrincipal Jwt jwt,
                                     @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return service.create(request, jwt.getClaimAsString("preferred_username"), authorization);
+        return service.create(request, actor(jwt), authorization);
     }
 
     @GetMapping
@@ -57,9 +57,19 @@ public class WorkOrderController {
                                           @RequestBody StatusUpdateRequest request,
                                           @AuthenticationPrincipal Jwt jwt,
                                           @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return service.updateStatus(id, request.status(), jwt.getClaimAsString("preferred_username"), authorization);
+        return service.updateStatus(id, request.status(), actor(jwt), authorization);
     }
 
     public record StatusUpdateRequest(WorkOrderStatus status) {
+    }
+
+    private String actor(Jwt jwt) {
+        for (String claim : new String[]{"preferred_username", "email", "upn"}) {
+            String value = jwt.getClaimAsString(claim);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return jwt.getSubject();
     }
 }

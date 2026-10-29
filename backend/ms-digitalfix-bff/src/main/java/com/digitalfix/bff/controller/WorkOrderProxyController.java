@@ -68,7 +68,13 @@ public class WorkOrderProxyController {
                                                 @AuthenticationPrincipal Jwt jwt) {
         return workOrdersClient.put().uri("/api/workorders/{id}/status", id)
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).contentType(MediaType.APPLICATION_JSON)
-                .body(payload).retrieve().toEntity(String.class);
+                .body(payload)
+                .exchange((request, response) -> ResponseEntity.status(response.getStatusCode())
+                        .headers(headers -> headers.setContentType(
+                                response.getHeaders().getContentType() == null
+                                        ? MediaType.APPLICATION_JSON
+                                        : response.getHeaders().getContentType()))
+                        .body(response.bodyTo(String.class)));
     }
 
     private String bearer(Jwt jwt) {

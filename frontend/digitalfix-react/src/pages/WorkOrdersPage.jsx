@@ -44,7 +44,10 @@ export default function WorkOrdersPage() {
     if (!next) return;
     httpClient.put(`/api/workorders/${order.id}/status`, { status: next })
       .then(load)
-      .catch(() => setError('La transición de estado no es válida.'));
+      .catch((requestError) => {
+        const message = requestError.response?.data?.message;
+        setError(message || 'La transición de estado no es válida.');
+      });
   };
   return <main className="page">
     <section className="page-heading"><div><p className="eyebrow">Operaciones / Seguimiento</p><h2>Órdenes de trabajo</h2><p className="page-description">Crea, consulta y actualiza solicitudes técnicas.</p></div><div className="summary-card"><span className="summary-label">Total filtradas</span><strong>{orders.length}</strong></div></section>
