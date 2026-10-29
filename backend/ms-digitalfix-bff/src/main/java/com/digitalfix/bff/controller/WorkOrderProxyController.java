@@ -57,8 +57,7 @@ public class WorkOrderProxyController {
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(payload)
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PutMapping("/{id}/status")
