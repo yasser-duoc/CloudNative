@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/workorders/**").hasAnyRole("Admin", "Supervisor", "Cliente")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/catalog/**")
+                        .hasAnyRole("Admin", "Supervisor", "Cliente")
                         .requestMatchers("/api/catalog/**").hasAnyRole("Admin", "Supervisor")
                         .requestMatchers("/api/audit/**").hasAnyRole("Auditor", "Admin")
                         .requestMatchers("/api/report/**").hasAnyRole("Admin", "Auditor")

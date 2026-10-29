@@ -1,17 +1,35 @@
 import { useEffect, useState } from 'react';
+import { useMsal } from '@azure/msal-react';
 import httpClient from '../services/httpClient';
 import { formatChileanPesos } from '../utils/formatters';
+import { getAccessTokenRoles } from '../services/authService';
+
+function normalizeRole(role) {
+  return String(role)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+del dominio$/, '')
+    .trim();
+}
 
 export default function CatalogPage() {
   const [services, setServices] = useState([]);
   const [parts, setParts] = useState([]);
   const [error, setError] = useState('');
+  const { accounts } = useMsal();
+  const [canManageCatalog, setCanManageCatalog] = useState(false);
   const [service, setService] = useState({ name: '', category: '', unitPrice: '', description: '' });
 
   const load = () => Promise.all([httpClient.get('/api/catalog/services'), httpClient.get('/api/catalog/spareparts')])
     .then(([servicesResponse, partsResponse]) => { setServices(servicesResponse.data || []); setParts(partsResponse.data || []); })
     .catch(() => setError('No fue posible cargar el catálogo.'));
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    getAccessTokenRoles(accounts?.[0])
+      .then((roles) => setCanManageCatalog(roles.some((role) => ['admin', 'administrador', 'supervisor'].includes(normalizeRole(role)))))
+      .catch(() => setCanManageCatalog(false));
+  }, [accounts]);
 
   const createService = (event) => {
     event.preventDefault();
@@ -28,7 +46,7 @@ export default function CatalogPage() {
     <section className="page-heading"><div><p className="eyebrow">Administración / Catálogo</p><h2>Catálogo técnico</h2><p className="page-description">Servicios, tarifas y disponibilidad de repuestos.</p></div></section>
     {error && <p className="alert alert-error">{error}</p>}
     <section className="catalog-grid">
-      <div className="orders-card"><div className="card-header"><div><h3>Nuevo servicio</h3><p>Registra una prestación técnica.</p></div></div><form className="form-grid" onSubmit={createService}><input required placeholder="Nombre" value={service.name} onChange={(e) => setService({ ...service, name: e.target.value })} /><input placeholder="Categoría" value={service.category} onChange={(e) => setService({ ...service, category: e.target.value })} /><label className="field-label">Tarifa en pesos chilenos<input type="number" min="0" step="1" placeholder="Ej: 50000" value={service.unitPrice} onChange={(e) => setService({ ...service, unitPrice: e.target.value })} /></label><textarea placeholder="Descripción" value={service.description} onChange={(e) => setService({ ...service, description: e.target.value })} /><button className="button button-primary" type="submit">Crear servicio</button></form></div>
+      {canManageCatalog && <div className="orders-card"><div className="card-header"><div><h3>Nuevo servicio</h3><p>Registra una prestación técnica.</p></div></div><form className="form-grid" onSubmit={createService}><input required placeholder="Nombre" value={service.name} onChange={(e) => setService({ ...service, name: e.target.value })} /><input placeholder="Categoría" value={service.category} onChange={(e) => setService({ ...service, category: e.target.value })} /><label className="field-label">Tarifa en pesos chilenos<input type="number" min="0" step="1" placeholder="Ej: 50000" value={service.unitPrice} onChange={(e) => setService({ ...service, unitPrice: e.target.value })} /></label><textarea placeholder="Descripción" value={service.description} onChange={(e) => setService({ ...service, description: e.target.value })} /><button className="button button-primary" type="submit">Crear servicio</button></form></div>}
       <div className="orders-card"><div className="card-header"><div><h3>Servicios ({services.length})</h3><p>Servicios disponibles para las órdenes.</p></div></div><div className="table-wrapper"><table><thead><tr><th>Nombre</th><th>Categoría</th><th>Tarifa (CLP)</th></tr></thead><tbody>{services.map((item) => <tr key={item.id}><td>{item.name}</td><td>{item.category || '—'}</td><td>{formatChileanPesos(item.unitPrice)}</td></tr>)}</tbody></table></div></div>
     </section>
     <section className="orders-card"><div className="card-header"><div><h3>Repuestos ({parts.length})</h3><p>Actualiza el stock disponible.</p></div></div><div className="table-wrapper"><table><thead><tr><th>Nombre</th><th>SKU</th><th>Stock</th><th /></tr></thead><tbody>{parts.map((part) => <tr key={part.id}><td>{part.name}</td><td>{part.sku}</td><td><span className={part.stock < 5 ? 'stock-low' : ''}>{part.stock}</span></td><td><button className="button button-outline" onClick={() => updateStock(part)}>Actualizar</button></td></tr>)}</tbody></table></div></section>

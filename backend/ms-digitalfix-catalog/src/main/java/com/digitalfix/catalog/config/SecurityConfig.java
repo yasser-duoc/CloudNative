@@ -9,9 +9,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+
+import java.util.Locale;
 
 @Configuration
 @EnableWebSecurity
@@ -48,12 +51,38 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthoritiesClaimName("roles");
-        authoritiesConverter.setAuthorityPrefix("ROLE_");
-
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            var authorities = jwt.getClaimAsStringList("roles");
+            if (authorities == null) {
+                return java.util.List.of();
+            }
+            return authorities.stream()
+                    .map(this::normalizeRole)
+                    .map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role))
+                    .toList();
+        });
         return converter;
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role == null ? "" : role
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u");
+        if (normalized.endsWith(" del dominio")) {
+            normalized = normalized.substring(0, normalized.length() - " del dominio".length()).trim();
+        }
+        return switch (normalized) {
+            case "admin", "administrador" -> "Admin";
+            case "supervisor" -> "Supervisor";
+            case "cliente", "cliente final" -> "Cliente";
+            case "auditor" -> "Auditor";
+            default -> role;
+        };
     }
 }
