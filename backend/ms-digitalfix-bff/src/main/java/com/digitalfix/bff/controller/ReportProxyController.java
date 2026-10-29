@@ -2,6 +2,7 @@ package com.digitalfix.bff.controller;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -25,8 +26,7 @@ public class ReportProxyController {
         return reportClient.get()
                 .uri("/api/report/kpis")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @GetMapping("/kpis/raw")
@@ -34,11 +34,18 @@ public class ReportProxyController {
         return reportClient.get()
                 .uri("/api/report/kpis/raw")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     private String bearer(Jwt jwt) {
         return "Bearer " + jwt.getTokenValue();
+    }
+
+    private ResponseEntity<String> sanitizedResponse(
+            org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
+        MediaType contentType = response.getHeaders().getContentType();
+        return ResponseEntity.status(response.getStatusCode())
+                .contentType(contentType == null ? MediaType.APPLICATION_JSON : contentType)
+                .body(new String(response.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
     }
 }

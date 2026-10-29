@@ -32,8 +32,7 @@ public class CatalogProxyController {
         return catalogClient.get()
                 .uri("/api/catalog/services")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PostMapping("/services")
@@ -52,8 +51,7 @@ public class CatalogProxyController {
         return catalogClient.get()
                 .uri("/api/catalog/spareparts")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PostMapping("/spareparts")
@@ -109,5 +107,13 @@ public class CatalogProxyController {
 
     private String bearer(Jwt jwt) {
         return "Bearer " + jwt.getTokenValue();
+    }
+
+    private ResponseEntity<String> sanitizedResponse(
+            org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
+        MediaType contentType = response.getHeaders().getContentType();
+        return ResponseEntity.status(response.getStatusCode())
+                .contentType(contentType == null ? MediaType.APPLICATION_JSON : contentType)
+                .body(new String(response.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
     }
 }
