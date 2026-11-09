@@ -32,8 +32,7 @@ public class CatalogProxyController {
         return catalogClient.get()
                 .uri("/api/catalog/services")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PostMapping("/services")
@@ -43,8 +42,7 @@ public class CatalogProxyController {
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(payload)
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @GetMapping("/spareparts")
@@ -52,8 +50,7 @@ public class CatalogProxyController {
         return catalogClient.get()
                 .uri("/api/catalog/spareparts")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PostMapping("/spareparts")
@@ -63,8 +60,7 @@ public class CatalogProxyController {
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(payload)
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PatchMapping("/spareparts/{id}/stock")
@@ -75,8 +71,7 @@ public class CatalogProxyController {
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(payload)
-                .retrieve()
-                .toEntity(String.class);
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PutMapping("/services/{id}")
@@ -84,13 +79,14 @@ public class CatalogProxyController {
                                                 @AuthenticationPrincipal Jwt jwt) {
         return catalogClient.put().uri("/api/catalog/services/{id}", id)
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).contentType(MediaType.APPLICATION_JSON)
-                .body(payload).retrieve().toEntity(String.class);
+                .body(payload).exchange((request, response) -> sanitizedResponse(response));
     }
 
     @DeleteMapping("/services/{id}")
     public ResponseEntity<String> deleteService(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         return catalogClient.delete().uri("/api/catalog/services/{id}", id)
-                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).retrieve().toEntity(String.class);
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     @PutMapping("/spareparts/{id}")
@@ -98,16 +94,25 @@ public class CatalogProxyController {
                                                   @AuthenticationPrincipal Jwt jwt) {
         return catalogClient.put().uri("/api/catalog/spareparts/{id}", id)
                 .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).contentType(MediaType.APPLICATION_JSON)
-                .body(payload).retrieve().toEntity(String.class);
+                .body(payload).exchange((request, response) -> sanitizedResponse(response));
     }
 
     @DeleteMapping("/spareparts/{id}")
     public ResponseEntity<String> deleteSparePart(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         return catalogClient.delete().uri("/api/catalog/spareparts/{id}", id)
-                .header(HttpHeaders.AUTHORIZATION, bearer(jwt)).retrieve().toEntity(String.class);
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt))
+                .exchange((request, response) -> sanitizedResponse(response));
     }
 
     private String bearer(Jwt jwt) {
         return "Bearer " + jwt.getTokenValue();
+    }
+
+    private ResponseEntity<String> sanitizedResponse(
+            org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
+        MediaType contentType = response.getHeaders().getContentType();
+        return ResponseEntity.status(response.getStatusCode())
+                .contentType(contentType == null ? MediaType.APPLICATION_JSON : contentType)
+                .body(new String(response.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
     }
 }

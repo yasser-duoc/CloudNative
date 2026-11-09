@@ -19,6 +19,7 @@ services:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
       AZURE_TENANT_ID: ${AZURE_TENANT_ID}
       AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:3000}
       WORKORDERS_SERVICE_URL: http://ms-digitalfix-workorders:8081
       CATALOG_SERVICE_URL: http://ms-digitalfix-catalog:8082
       NOTIFY_SERVICE_URL: http://ms-digitalfix-notify:8083

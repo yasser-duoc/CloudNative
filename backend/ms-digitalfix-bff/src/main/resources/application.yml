@@ -17,6 +17,8 @@ azure:
     audience: api://${AZURE_API_CLIENT_ID}
 
 digitalfix:
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
   services:
     workorders:
       base-url: ${WORKORDERS_SERVICE_URL:http://localhost:8081}
