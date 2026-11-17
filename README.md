@@ -45,8 +45,8 @@ Kafka queda preparado como módulo independiente para una incorporación posteri
 | `ms-digitalfix-catalog` | 8082 | PostgreSQL | Servicios, repuestos y stock |
 | `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ: notificaciones y generación de tickets |
 | `ms-digitalfix-rabbitadmin` | 8086 | — | Administrador RabbitMQ: colas, exchanges y bindings vía REST |
-| `ms-digitalfix-audit` | 8084 | PostgreSQL | Consulta de auditoría |
-| `ms-digitalfix-report` | 8085 | PostgreSQL | Consulta de reportes y KPIs |
+| `ms-digitalfix-audit` | 8084 | PostgreSQL | Consumidor Kafka: auditoría (event sourcing) |
+| `ms-digitalfix-report` | 8085 | PostgreSQL | Consumidor Kafka: reportes y KPIs |
 
 ## Tecnologías
 
@@ -131,6 +131,38 @@ nombres reservados `amq.*`/`default` rechazados). Protegido con JWT y rol `Admin
 Errores claros con códigos HTTP: `400` (validación), `404` (recurso inexistente),
 `409` (conflicto).
 
+## Mensajería asíncrona (Kafka)
+
+Kafka es un **log**, no una cola: los mensajes persisten hasta su retención, los
+lee quien los lea, y cada *consumer group* lleva su propio *offset*. Por eso se usa
+para **auditoría (event sourcing)** y **analítica (KPIs)**, donde importa poder
+**reprocesar el historial** (replay) y que varios sistemas lean el mismo flujo sin
+afectarse. (Detalle conceptual en la guía del curso: Kafka 4.x con KRaft.)
+
+| Topic | Particiones | Productor | Consumidor (group-id) |
+|---|---|---|---|
+| `workorder.audit` | 3 | `ms-digitalfix-workorders` | `ms-digitalfix-audit` |
+| `workorder.kpi` | 3 | `ms-digitalfix-workorders` | `ms-digitalfix-report` |
+
+- **Productor** (`WorkOrderEventPublisher`): publica cada `WorkOrderEvent` a Kafka
+  (además de RabbitMQ). La *key* es el `eventId`, de modo que los eventos de una
+  misma orden conservan orden dentro de una partición.
+- **Consumidores**: `@KafkaListener` en `ms-digitalfix-audit` (topic `workorder.audit`)
+  y `ms-digitalfix-report` (topic `workorder.kpi`).
+- **DLQ**: Kafka no tiene DLQ nativa; Spring la simula. Con `DefaultErrorHandler` +
+  `DeadLetterPublishingRecoverer`, los mensajes fallidos (tras 3 reintentos) se
+  publican a `workorder.audit.DLT` / `workorder.kpi.DLT`.
+- **Broker**: Kafka 4.x con **KRaft** (sin ZooKeeper), imagen `apache/kafka:4.0.0`
+  (`infrastructure/compose.kafka.yml`). Kafka UI (Kafbat) en http://localhost:8090.
+
+### Demo de Kafka
+
+1. Levantar el broker: `docker compose -f infrastructure\compose.kafka.yml up -d`.
+2. Crear una orden → ver en logs de audit/report el consumo (`Evento de auditoría/KPI recibido`).
+3. Replay: con la CLI del contenedor, `kafka-console-consumer --from-beginning` muestra
+   el historial completo sin borrarlo (la diferencia clave frente a RabbitMQ).
+4. En Kafka UI (http://localhost:8090) ver los topics, particiones y el *lag* de cada grupo.
+
 ## Ejecución local
 
 Requisitos: Docker, Docker Compose, Java 21, Node.js 20 y credenciales de Azure AD.
@@ -140,6 +172,7 @@ Copy-Item infrastructure\.env.example infrastructure\.env
 docker network create digitalfix-net
 docker compose -f infrastructure\compose.postgres.yml --env-file infrastructure\.env up -d
 docker compose -f infrastructure\compose.rabbitmq.yml --env-file infrastructure\.env up -d
+docker compose -f infrastructure\compose.kafka.yml --env-file infrastructure\.env up -d
 docker compose -f infrastructure\compose.apps.yml --env-file infrastructure\.env up -d --build
 ```
 
