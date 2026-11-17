@@ -49,6 +49,13 @@ until docker inspect --format='{{.State.Health.Status}}' digitalfix-postgres 2>/
   sleep 5
 done
 
+# Kafka (KRaft): advertised.listeners debe apuntar a la IP publica de la instancia.
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+IP_PUBLICA=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
+export KAFKA_ADVERTISED_HOST="${IP_PUBLICA}"
+docker compose -f infrastructure/compose.kafka.yml --env-file infrastructure/.env up -d
+sleep 20
+
 # Construir un servicio a la vez evita que Maven consuma toda la RAM disponible.
 export COMPOSE_PARALLEL_LIMIT=1
 docker compose -f infrastructure/compose.apps.yml --env-file infrastructure/.env build
