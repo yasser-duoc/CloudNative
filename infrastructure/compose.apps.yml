@@ -50,7 +50,8 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8081:8081"    mem_limit: 320m
+      - "8081:8081"
+    mem_limit: 320m
     mem_reservation: 192m
     restart: unless-stopped
     networks:
