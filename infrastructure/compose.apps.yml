@@ -48,9 +48,9 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-digitalfix}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-digitalfix}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
-      - "8081:8081"
-    mem_limit: 320m
+      - "8081:8081"    mem_limit: 320m
     mem_reservation: 192m
     restart: unless-stopped
     networks:
@@ -120,6 +120,7 @@ services:
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/audit_db
       POSTGRES_USER: ${POSTGRES_USER:-digitalfix}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8084:8084"
     mem_limit: 256m
@@ -138,6 +139,7 @@ services:
       POSTGRES_JDBC_URL: jdbc:postgresql://postgres:5432/report_db
       POSTGRES_USER: ${POSTGRES_USER:-digitalfix}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-digitalfix}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8085:8085"
     mem_limit: 256m

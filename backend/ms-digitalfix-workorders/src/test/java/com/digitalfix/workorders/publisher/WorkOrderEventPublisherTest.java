@@ -1,5 +1,6 @@
 package com.digitalfix.workorders.publisher;
 
+import com.digitalfix.workorders.config.KafkaConfig;
 import com.digitalfix.workorders.config.RabbitMQConfig;
 import com.digitalfix.workorders.event.WorkOrderEvent;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Instant;
 
@@ -16,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -28,6 +31,9 @@ class WorkOrderEventPublisherTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private KafkaTemplate<String, WorkOrderEvent> kafkaTemplate;
+
     @InjectMocks
     private WorkOrderEventPublisher publisher;
 
@@ -38,12 +44,14 @@ class WorkOrderEventPublisherTest {
     }
 
     @Test
-    void publishesCreatedEventToCreatedRoutingKey() {
+    void publishesCreatedEventToRabbitRoutingKeyAndBothKafkaTopics() {
         WorkOrderEvent event = event(WorkOrderEvent.TYPE_CREATED);
 
         publisher.publish(event);
 
         verify(rabbitTemplate).convertAndSend(eq(RabbitMQConfig.EXCHANGE), eq("workorder.created"), eq(event));
+        verify(kafkaTemplate).send(KafkaConfig.AUDIT_TOPIC, event.eventId(), event);
+        verify(kafkaTemplate).send(KafkaConfig.KPI_TOPIC, event.eventId(), event);
     }
 
     @Test
@@ -71,5 +79,7 @@ class WorkOrderEventPublisherTest {
 
         assertThatCode(() -> publisher.publish(event(WorkOrderEvent.TYPE_CREATED)))
                 .doesNotThrowAnyException();
+
+        verify(kafkaTemplate, never()).send(any(), any(), any());
     }
 }

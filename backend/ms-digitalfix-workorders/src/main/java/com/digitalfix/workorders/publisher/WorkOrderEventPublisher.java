@@ -1,21 +1,36 @@
 package com.digitalfix.workorders.publisher;
 
+import com.digitalfix.workorders.config.KafkaConfig;
 import com.digitalfix.workorders.config.RabbitMQConfig;
 import com.digitalfix.workorders.event.WorkOrderEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Publica los eventos de órdenes de trabajo a dos canales desacoplados:
+ *
+ * <ul>
+ *   <li>RabbitMQ (colas): tareas de trabajo — notificaciones y generación de tickets.</li>
+ *   <li>Kafka (log): flujo de eventos para auditoría (event sourcing/replay) y analítica (KPIs).</li>
+ * </ul>
+ *
+ * La publicación es best-effort: un fallo del broker no revierte ni afecta la lógica de órdenes.
+ */
 @Component
 public class WorkOrderEventPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(WorkOrderEventPublisher.class);
 
     private final RabbitTemplate rabbitTemplate;
+    private final KafkaTemplate<String, WorkOrderEvent> kafkaTemplate;
 
-    public WorkOrderEventPublisher(RabbitTemplate rabbitTemplate) {
+    public WorkOrderEventPublisher(RabbitTemplate rabbitTemplate,
+                                   KafkaTemplate<String, WorkOrderEvent> kafkaTemplate) {
         this.rabbitTemplate = rabbitTemplate;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public void publish(WorkOrderEvent event) {
@@ -27,8 +42,10 @@ public class WorkOrderEventPublisher {
 
         try {
             rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, routingKey, event);
+            kafkaTemplate.send(KafkaConfig.AUDIT_TOPIC, event.eventId(), event);
+            kafkaTemplate.send(KafkaConfig.KPI_TOPIC, event.eventId(), event);
         } catch (Exception ex) {
-            log.error("Error publicando evento {} en RabbitMQ: {}", event.eventId(), ex.getMessage(), ex);
+            log.error("Error publicando evento {} en RabbitMQ/Kafka: {}", event.eventId(), ex.getMessage(), ex);
         }
     }
 }
