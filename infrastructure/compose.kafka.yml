@@ -1,13 +1,16 @@
 # ============================================================
-#  Kafka 4.x con KRaft (sin ZooKeeper) + Kafka UI
+#  Kafka 4.x con KRaft (sin ZooKeeper)
 #
 #  Un solo nodo con ambos roles (broker,controller), ideal para
 #  laboratorio. Kafka 4.0 elimino ZooKeeper: el consenso lo
-#  gestiona KRaft internamente.
+#  gestiona KRaft internamente (los compose con zookeeper+kafka
+#  estan obsoletos y no son compatibles con apache/kafka:4.x).
 #
 #  KAFKA_ADVERTISED_HOST: en local deja el default (localhost);
 #  en EC2 debe ser la IP publica de la instancia (el user-data.sh
 #  la obtiene via IMDSv2 y la exporta).
+#
+#  La UI de administracion va en compose.kafka-ui.yml (separada).
 # ============================================================
 
 services:
@@ -48,26 +51,10 @@ services:
     networks:
       - digitalfix-net
 
-  kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:latest
-    container_name: kafka-ui
-    ports:
-      - "8090:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      DYNAMIC_CONFIG_ENABLED: "true"
-    mem_limit: 256m
-    mem_reservation: 128m
-    depends_on:
-      - kafka
-    restart: unless-stopped
-    networks:
-      - digitalfix-net
-
 volumes:
   kafka_data:
 
 networks:
   digitalfix-net:
     external: true
+

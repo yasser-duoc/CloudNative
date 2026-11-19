@@ -1,0 +1,21 @@
+# Kafka-UI (Kafbat) para administrar brokers y topicos del cluster Kafka
+# definido en compose.kafka.yml (red digitalfix-net compartida).
+services:
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    mem_limit: 256m
+    mem_reservation: 128m
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
+networks:
+  digitalfix-net:
+    external: true

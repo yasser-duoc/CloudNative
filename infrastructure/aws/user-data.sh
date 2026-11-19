@@ -55,6 +55,7 @@ IP_PUBLICA=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.25
 export KAFKA_ADVERTISED_HOST="${IP_PUBLICA}"
 docker compose -f infrastructure/compose.kafka.yml --env-file infrastructure/.env up -d
 sleep 20
+docker compose -f infrastructure/compose.kafka-ui.yml --env-file infrastructure/.env up -d
 
 # Construir un servicio a la vez evita que Maven consuma toda la RAM disponible.
 export COMPOSE_PARALLEL_LIMIT=1
