@@ -45,6 +45,7 @@ Kafka queda preparado como módulo independiente para una incorporación posteri
 | `ms-digitalfix-catalog` | 8082 | PostgreSQL | Servicios, repuestos y stock |
 | `ms-digitalfix-notify` | 8083 | — | Consumidor RabbitMQ: notificaciones y generación de tickets |
 | `ms-digitalfix-rabbitadmin` | 8086 | — | Administrador RabbitMQ: colas, exchanges y bindings vía REST |
+| `ms-digitalfix-kafkaadmin` | 8087 | — | Administrador Kafka: topics, configs y consumer groups vía REST |
 | `ms-digitalfix-audit` | 8084 | PostgreSQL | Consumidor Kafka: auditoría (event sourcing) |
 | `ms-digitalfix-report` | 8085 | PostgreSQL | Consumidor Kafka: reportes y KPIs |
 
@@ -157,11 +158,63 @@ afectarse. (Detalle conceptual en la guía del curso: Kafka 4.x con KRaft.)
 
 ### Demo de Kafka
 
-1. Levantar el broker: `docker compose -f infrastructure\compose.kafka.yml up -d`.
+1. Levantar el broker: `docker compose -f infrastructure\compose.kafka.yml up -d`
+   y la UI: `docker compose -f infrastructure\compose.kafka-ui.yml up -d`.
 2. Crear una orden → ver en logs de audit/report el consumo (`Evento de auditoría/KPI recibido`).
 3. Replay: con la CLI del contenedor, `kafka-console-consumer --from-beginning` muestra
    el historial completo sin borrarlo (la diferencia clave frente a RabbitMQ).
 4. En Kafka UI (http://localhost:8090) ver los topics, particiones y el *lag* de cada grupo.
+
+### Configuración avanzada de topics
+
+| Topic | Particiones | Réplicas | `retention.ms` | `cleanup.policy` | Justificación |
+|---|---|---|---|---|---|
+| `workorder.audit` | 3 | 1 | 7 días (604800000) | `delete` | Auditoría/event sourcing: el historial debe poder reprocesarse (replay) |
+| `workorder.kpi` | 3 | 1 | 1 día (86400000) | `delete` | Analítica: solo interesa el flujo reciente |
+
+Declaradas programáticamente en `KafkaConfig` (workorders) con `TopicBuilder.config(...)`.
+
+### Consumer groups estratégicos
+
+| Group | Topic | Propósito | Resiliencia |
+|---|---|---|---|
+| `ms-digitalfix-audit` | `workorder.audit` | Timeline de auditoría (event sourcing) | Reintentos (3, backoff) → `workorder.audit.DLT` |
+| `ms-digitalfix-report` | `workorder.kpi` | KPIs y analítica | Reintentos (3, backoff) → `workorder.kpi.DLT` |
+
+Grupos independientes = ambos leen el mismo flujo sin afectarse (offset propio). Las
+3 particiones permiten escalar hasta 3 consumidores por grupo (una partición por consumidor).
+
+### Manejo de errores (mensajes defectuosos)
+
+Los listeners **validan el payload** (`eventId`, `workOrderId`) antes de procesar y
+registran **logging contextual** (partición y offset). Un evento defectuoso lanza
+`InvalidEventException`; el `DefaultErrorHandler` lo reintenta 3 veces y, si persiste,
+lo publica al topic `.DLT` — **sin interrumpir el consumo** del grupo.
+
+### Administración de Kafka (ms-digitalfix-kafkaadmin)
+
+Microservicio (puerto 8087) con la lógica encapsulada en `KafkaAdminService` sobre
+`AdminClient`. Protegido con JWT y rol `Admin`; validación de parámetros (nombres con
+formato válido, particiones/réplicas ≥ 1, `cleanup.policy` ∈ {delete, compact},
+nombres reservados rechazados) y errores HTTP claros (400/404/409/503):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/kafka/topics` | Lista los topics |
+| POST | `/api/kafka/topics` | Crea un topic (particiones, réplicas, `retention.ms`, `cleanup.policy`); 409 si existe |
+| GET | `/api/kafka/topics/{name}` | Inspecciona un topic (particiones, réplicas, configs); 404 si no existe |
+| PATCH | `/api/kafka/topics/{name}` | Actualiza configs y/o aumenta particiones |
+| DELETE | `/api/kafka/topics/{name}` | Elimina el topic; 404 si no existe |
+| GET | `/api/kafka/consumer-groups` | Lista los consumer groups |
+| GET | `/api/kafka/consumer-groups/{groupId}` | Inspecciona un grupo (estado y miembros) |
+| DELETE | `/api/kafka/consumer-groups/{groupId}` | Elimina el grupo; 404 si no existe |
+
+### Nota de diseño: KRaft (sin ZooKeeper)
+
+La imagen oficial `apache/kafka:4.0.0` usa **KRaft**: Kafka 4.x **eliminó ZooKeeper**
+(ya deprecado desde 3.5) y el consenso de metadatos lo gestionan los controllers Raft
+internamente. Los `docker-compose` con `zookeeper` + `kafka` son material obsoleto;
+en Kafka 4.x **no es posible** usar ZooKeeper.
 
 ## Ejecución local
 
