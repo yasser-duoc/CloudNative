@@ -111,6 +111,22 @@ services:
     networks:
       - digitalfix-net
 
+  ms-digitalfix-kafkaadmin:
+    build:
+      context: ../backend/ms-digitalfix-kafkaadmin
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=15 -XX:+UseSerialGC"
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      AZURE_API_CLIENT_ID: ${AZURE_API_CLIENT_ID}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8087:8087"
+    mem_limit: 320m
+    mem_reservation: 192m
+    restart: unless-stopped
+    networks:
+      - digitalfix-net
+
   ms-digitalfix-audit:
     build:
       context: ../backend/ms-digitalfix-audit
